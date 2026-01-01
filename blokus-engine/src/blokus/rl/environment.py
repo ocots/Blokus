@@ -138,11 +138,10 @@ class BlokusEnv(gym.Env):
     def _create_game(self) -> Game:
         """Create a new game with the configured settings."""
         board = Board(size=self.config.board_size)
-        players = [Player(id=i) for i in range(self.config.num_players)]
+        # Use Game constructor which will create default players via PlayerFactory
         return Game(
             num_players=self.config.num_players,
-            board=board,
-            players=players
+            board=board
         )
     
     def reset(

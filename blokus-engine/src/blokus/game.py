@@ -1,4 +1,4 @@
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import List, Optional, Tuple, Set
 from enum import Enum
 import numpy as np
@@ -6,6 +6,8 @@ import numpy as np
 from blokus.pieces import Piece, PieceType, PIECES, get_piece
 from blokus.board import Board, BOARD_SIZE
 from blokus.player import Player
+from blokus.player_factory import PlayerFactory
+from blokus.game_manager import GameManager
 from blokus.rules import is_valid_placement, get_valid_placements, has_valid_move
 
 
@@ -29,32 +31,58 @@ class Move:
         return get_piece(self.piece_type, self.orientation)
 
 
-@dataclass
 class Game:
     """
     Blokus game manager.
     
     Handles game state, turns, move validation, and scoring.
+    Now uses GameManager for player and turn management.
     """
-    num_players: int = 4
-    board: Board = field(default_factory=Board)
-    players: List[Player] = field(default_factory=list)
-    current_player_idx: int = 0
-    move_history: List[Move] = field(default_factory=list)
-    status: GameStatus = GameStatus.IN_PROGRESS
-    
-    def __post_init__(self):
-        # DI: If players are not injected, create defaults based on num_players
-        if not self.players:
-            self.players = [Player(id=i) for i in range(self.num_players)]
+    def __init__(
+        self, 
+        num_players: int = 4,
+        board: Optional[Board] = None,
+        players: Optional[List[Player]] = None,
+        starting_player_idx: int = 0,
+        move_history: Optional[List[Move]] = None,
+        status: GameStatus = GameStatus.IN_PROGRESS,
+        game_manager: Optional[GameManager] = None
+    ):
+        self.board = board or Board()
+        self.move_history = move_history or []
+        self.status = status
+        
+        # Use GameManager for player management
+        if game_manager is not None:
+            self.game_manager = game_manager
+        elif players:
+            # Create GameManager from provided players
+            self.game_manager = GameManager(players, starting_player_idx)
         else:
-            # If players injected, update num_players to match
-            self.num_players = len(self.players)
+            # Create default players with GameManager
+            default_players = PlayerFactory.create_standard_players(num_players)
+            self.game_manager = GameManager(default_players, starting_player_idx)
+    
+    # Convenience properties for backward compatibility
+    @property
+    def players(self) -> List[Player]:
+        """Get players list."""
+        return self.game_manager.players
+    
+    @property
+    def num_players(self) -> int:
+        """Get number of players."""
+        return self.game_manager.player_count
+    
+    @property
+    def current_player_idx(self) -> int:
+        """Get current player index."""
+        return self.game_manager.current_player_index
     
     @property
     def current_player(self) -> Player:
         """Get current player."""
-        return self.players[self.current_player_idx]
+        return self.game_manager.current_player
     
     @property
     def turn_number(self) -> int:
@@ -176,33 +204,24 @@ class Game:
         self._next_turn()
     
     def _next_turn(self) -> None:
-        """Advance to next player."""
+        """Advance to next player using GameManager."""
         # Check if game is over
         if self._check_game_over():
             self.status = GameStatus.FINISHED
             return
         
-        # Find next player who hasn't passed
-        attempts = 0
-        while attempts < self.num_players:
-            self.current_player_idx = (self.current_player_idx + 1) % self.num_players
-            player = self.current_player
-            
-            if not player.has_passed:
-                # Check if player has any valid moves
-                if not player.remaining_pieces:
-                    player.has_passed = True
-                else:
-                    # Check if any move is possible
-                    valid_moves = self.get_valid_moves()
-                    if not valid_moves:
-                        player.has_passed = True
-                    else:
-                        break  # This player can play
-            
-            attempts += 1
+        # Auto-pass players with no valid moves
+        current = self.current_player
+        if not current.has_passed and current.remaining_pieces:
+            valid_moves = self.get_valid_moves()
+            if not valid_moves:
+                current.has_passed = True
         
-        if attempts >= self.num_players:
+        # Use GameManager to advance turn
+        self.game_manager.next_turn()
+        
+        # Check if game is finished
+        if self.game_manager.is_game_over():
             self.status = GameStatus.FINISHED
     
     def _check_game_over(self) -> bool:
@@ -272,21 +291,32 @@ class Game:
         new_players = [
             Player(
                 id=p.id,
+                name=p.name,
+                color=p.color,
+                type=p.type,
+                persona=p.persona,
                 remaining_pieces=p.remaining_pieces.copy(),
                 has_passed=p.has_passed,
-                last_piece_was_monomino=p.last_piece_was_monomino
+                last_piece_was_monomino=p.last_piece_was_monomino,
+                status=p.status,
+                score=p.score,
+                turn_order=p.turn_order
             )
             for p in self.players
         ]
         
+        # Create new GameManager with copied players
+        new_game_manager = GameManager(new_players, self.current_player_idx)
+        new_game_manager.turn_history = self.game_manager.turn_history.copy()
+        new_game_manager.game_finished = self.game_manager.game_finished
+        
         new_game = Game(
-            num_players=self.num_players,
             board=self.board.copy(),
-            players=new_players,
-            current_player_idx=self.current_player_idx,
             move_history=self.move_history.copy(),
-            status=self.status
+            status=self.status,
+            game_manager=new_game_manager
         )
+        
         return new_game
     
     def __repr__(self) -> str:

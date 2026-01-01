@@ -305,15 +305,15 @@ class TestStartingPlayer:
     def test_start_with_invalid_player_raises_error(self):
         """Starting with invalid player ID should raise error."""
         # Test negative player ID
-        with pytest.raises(ValueError, match="starting_player_idx must be between 0 and 3"):
+        with pytest.raises(ValueError, match="starting_player_index must be between 0 and 3"):
             Game(starting_player_idx=-1)
             
         # Test player ID too high for 4-player game
-        with pytest.raises(ValueError, match="starting_player_idx must be between 0 and 3"):
+        with pytest.raises(ValueError, match="starting_player_index must be between 0 and 3"):
             Game(starting_player_idx=4)
             
         # Test player ID too high for 2-player game
-        with pytest.raises(ValueError, match="starting_player_idx must be between 0 and 1"):
+        with pytest.raises(ValueError, match="starting_player_index must be between 0 and 1"):
             Game(num_players=2, starting_player_idx=2)
 
     def test_starting_player_with_different_player_counts(self):
