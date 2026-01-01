@@ -66,12 +66,58 @@ class TestAgentRegistry:
     def test_load_agent_errors(self, temp_registry_file):
         """Should raise ValueError for unknown or disabled agents."""
         registry = AgentRegistry(temp_registry_file)
-        
         with pytest.raises(ValueError, match="Unknown agent"):
             registry.load_agent("ghost")
             
         with pytest.raises(ValueError, match="not enabled"):
             registry.load_agent("disabled_agent")
+
+    def test_list_for_api(self, temp_registry_file):
+        """Should return formatted dicts for API."""
+        registry = AgentRegistry(temp_registry_file)
+        api_list = registry.list_for_api()
+        assert len(api_list) == 1
+        assert api_list[0]["id"] == "random"
+
+    def test_reload_registry(self, temp_registry_file):
+        """Should reload data from disk."""
+        registry = AgentRegistry(temp_registry_file)
+        assert len(registry._agents) == 2
+        
+        # Modify file
+        with open(temp_registry_file, "w", encoding="utf-8") as f:
+            json.dump([{
+                "id": "new", "name": "N", "description": "D", 
+                "type": "heuristic", "class_name": "RandomAgent", "enabled": True
+            }], f)
+            
+        registry.reload()
+        assert len(registry._agents) == 1
+        assert "new" in registry._agents
+
+    def test_load_agent_model_not_implemented(self, temp_registry_file):
+        """Should raise NotImplementedError for model agents for now."""
+        with open(temp_registry_file, "r") as f:
+            data = json.load(f)
+        data.append({
+            "id": "model_agent",
+            "name": "Model", 
+            "description": "D",
+            "type": "model",
+            "model_path": "dummy.pt",
+            "enabled": True
+        })
+        with open(temp_registry_file, "w") as f:
+            json.dump(data, f)
+            
+        # Mock model file existence to get to NotImplementedError
+        import os
+        model_file = temp_registry_file.parent / "dummy.pt"
+        model_file.touch()
+        
+        registry = AgentRegistry(temp_registry_file)
+        with pytest.raises(NotImplementedError):
+            registry.load_agent("model_agent")
 
     def test_agent_metadata_to_api_dict(self):
         """Metadata should convert correctly for API usage."""

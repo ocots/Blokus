@@ -163,30 +163,9 @@ async function resumeGame(json) {
 async function launchGame(config, isApiAvailable) {
     console.log('🚀 Launching Game with config:', config);
 
-    // Apply "Start Player" logic: Reorder config.players if necessary
-    // If Start Player is not 0, we rotate the players array so that the chosen player is at index 0 (Blue)
-    if (config.startPlayer > 0 && config.players) {
-        const rotation = config.startPlayer; // number of positions to shift
-        const players = [...config.players];
-
-        // Rotating logic: [0, 1, 2, 3] -> startPlayer=1 -> [1, 2, 3, 0]
-        // But wait, the Setup UI has fixed colors.
-        // Row 0 is Blue. Row 1 is Green.
-        // If I say "Row 1 (Green) starts", I want that PERSON to be Blue.
-        // So I take the config of Row 1 and move it to Index 0.
-        // Yes, rotate:
-        const reorderedPlayers = [];
-        for (let i = 0; i < config.playerCount; i++) {
-            reorderedPlayers.push(players[(i + rotation) % config.playerCount]);
-        }
-
-        // Reassign reordered players to config, but keep IDs logic consistent locally if needed?
-        // Game engine assigns ID 0..3 based on array index.
-        // So ID 0 will be the player in reorderedPlayers[0].
-        config.players = reorderedPlayers;
-        config.startPlayer = 0; // Reset to 0 since we rotated
-        console.log('🔄 Players reordered for start player:', config.players);
-    }
+    // Remove player rotation logic - backend now handles starting player
+    // The startPlayer value is passed directly to the backend
+    console.log('📋 Starting player will be:', config.startPlayer);
 
     // Create board
     const board = new Board('game-board');
@@ -220,6 +199,9 @@ async function launchGame(config, isApiAvailable) {
 
     // Initial render
     board.render();
+
+    // Auto-save immediately to enable reload-resume
+    game.save();
 }
 
 // Start when DOM is ready
