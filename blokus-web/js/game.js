@@ -5,6 +5,7 @@
  */
 
 import { PIECES, getPiece, getAllPieceTypes, PieceType } from './pieces.js';
+import { DUO_STARTING_CORNERS, STARTING_CORNERS } from './board.js';
 
 /**
  * Game class manages the overall game state.
@@ -85,21 +86,60 @@ export class Game {
      * @private
      */
     _init() {
+        // Initialize board based on 2-player mode
+        const twoPlayerMode = this._config.twoPlayerMode;
+        if (twoPlayerMode === 'duo') {
+            // Blokus Duo: 14x14 board
+            this._board.init(14, DUO_STARTING_CORNERS);
+        } else if (twoPlayerMode === 'standard') {
+            // Blokus Standard 2P: 20x20 board, 4 colors
+            this._board.init(20, STARTING_CORNERS);
+        } else {
+            // Default: 20x20 board
+            this._board.init(20, STARTING_CORNERS);
+        }
+
         // Initialize players
         this._players = [];
-        for (let i = 0; i < this._numPlayers; i++) {
-            const playerConfig = this._config.players ? this._config.players[i] : null;
-            const name = playerConfig ? (playerConfig.name || `Joueur ${i + 1}`) : `Joueur ${i + 1}`;
-            console.log(`Init player ${i}: name="${name}"`, playerConfig);
 
-            this._players.push({
-                id: i,
-                name: name,
-                color: playerConfig ? playerConfig.color : null, // Color handling might need display logic
-                remainingPieces: new Set(getAllPieceTypes()),
-                hasPassed: false,
-                lastPieceWasMonomino: false
-            });
+        // Special handling for 2-player Standard mode
+        if (this._numPlayers === 2 && twoPlayerMode === 'standard') {
+            // Each player controls 2 colors
+            // Player 1 controls colors 0 (Blue) and 2 (Yellow)
+            // Player 2 controls colors 1 (Green) and 3 (Red)
+            for (let colorId = 0; colorId < 4; colorId++) {
+                const controllerId = colorId % 2; // 0,2 -> Player 0; 1,3 -> Player 1
+                const playerConfig = this._config.players ? this._config.players[controllerId] : null;
+                const controllerName = playerConfig ? playerConfig.name : `Joueur ${controllerId + 1}`;
+
+                this._players.push({
+                    id: colorId,
+                    name: `${controllerName} (Couleur ${colorId + 1})`,
+                    controlledBy: controllerId,
+                    color: playerConfig ? playerConfig.color : null,
+                    remainingPieces: new Set(getAllPieceTypes()),
+                    hasPassed: false,
+                    lastPieceWasMonomino: false
+                });
+            }
+            // Override numPlayers for game logic
+            this._numPlayers = 4;
+        } else {
+        // Normal mode
+            for (let i = 0; i < this._numPlayers; i++) {
+                const playerConfig = this._config.players ? this._config.players[i] : null;
+                const name = playerConfig ? (playerConfig.name || `Joueur ${i + 1}`) : `Joueur ${i + 1}`;
+                console.log(`Init player ${i}: name="${name}"`, playerConfig);
+
+                this._players.push({
+                    id: i,
+                    name: name,
+                    color: playerConfig ? playerConfig.color : null,
+                    remainingPieces: new Set(getAllPieceTypes()),
+                    hasPassed: false,
+                    lastPieceWasMonomino: false
+                });
+            }
         }
 
         this._currentPlayer = this._config.startPlayer || 0;
@@ -397,6 +437,7 @@ export class Game {
         }
 
         this._updateUI();
+        this.save();
     }
 
     /**
@@ -518,5 +559,95 @@ export class Game {
         `).join('');
 
         modal.classList.remove('hidden');
+    }
+
+    /**
+     * Serialize game state
+     */
+    serialize() {
+        return JSON.stringify({
+            version: 1,
+            config: this._config,
+            currentPlayer: this._currentPlayer,
+            players: this._players.map(p => ({
+                ...p,
+                remainingPieces: Array.from(p.remainingPieces)
+            })),
+            moveHistory: this._moveHistory,
+            gameOver: this._gameOver,
+            sharedTurnControllerIndex: this._sharedTurnControllerIndex,
+            grid: this._board.getGrid(),
+            boardSize: this._board.size,
+            startingCorners: this._board.startingCorners
+        });
+    }
+
+    /**
+     * Deserialize and restore game state
+     */
+    deserialize(json) {
+        try {
+            const data = JSON.parse(json);
+
+            this._config = data.config;
+            this._currentPlayer = data.currentPlayer;
+            this._moveHistory = data.moveHistory || [];
+            this._gameOver = data.gameOver;
+            this._sharedTurnControllerIndex = data.sharedTurnControllerIndex || 0;
+
+            // Restore Players
+            this._players = data.players.map(p => ({
+                ...p,
+                remainingPieces: new Set(p.remainingPieces)
+            }));
+
+            // Restore Board size and corners if saved
+            if (data.boardSize && data.startingCorners) {
+                this._board.init(data.boardSize, data.startingCorners);
+            }
+
+            // Restore Board grid
+            this._board.setGridFromArray(data.grid);
+
+            // Restore Settings
+            if (this._config.isColorblind || (this._config.settings && this._config.settings.colorblindMode)) {
+                this._board.setColorblindMode(true);
+            }
+
+            this._updateUI();
+
+            if (!this._gameOver) {
+                // Ensure controls exist before calling renderPieces
+                if (this._controls) {
+                    this._controls.renderPieces(this._currentPlayer, this._players[this._currentPlayer].remainingPieces);
+                }
+            } else {
+                this._showGameOver();
+            }
+
+            return true;
+        } catch (e) {
+            console.error('Failed to load save:', e);
+            return false;
+        }
+    }
+
+    /**
+     * Save game to local storage
+     */
+    save() {
+        if (this._useApi || this._gameOver) return;
+        try {
+            localStorage.setItem('blokus_save', this.serialize());
+        } catch (e) {
+            console.warn('LocalStorage save failed:', e);
+        }
+    }
+
+    /**
+     * Clear saved game
+     */
+    clearSave() {
+        localStorage.removeItem('blokus_save');
     }
 }

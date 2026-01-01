@@ -72,63 +72,101 @@ Roadmap détaillé pour le développement du projet.
 | 3.75.4 | **Accessibilité** : Mode Daltonien (Motifs) | `board.js` |
 | 3.75.5 | **3 Joueurs** : Logique de rotation Couleur Partagée | `game.js` |
 
+## Phase 3.8 : Persistence & UX 💾 - **TERMINÉ**
+
+**Objectif** : Améliorer l'expérience utilisateur avec sauvegarde et refonte visuelle.
+
+| Étape | Description | Fichier |
+|-------|-------------|---------|
+| 3.8.1 | **Persistence** : Sauvegarde localStorage & Reprise | `game.js`, `main.js` |
+| 3.8.2 | **UX** : Bouton Quitter & Gestion Fin de Partie | `index.html`, `style.css` |
+| 3.8.3 | **Refonte Menu** : Layout Horizontal | `index.html`, `style.css` |
+
 ## Phase 4 : Environnement RL 🧠
 
 **Objectif** : Wrapper le jeu pour l'apprentissage par renforcement.
 
-| Étape | Description | Fichier |
-|-------|-------------|---------|
-| 4.1 | Environnement Gym-compatible | `environment.py` |
-| 4.2 | Représentation d'état (47 canaux) | `environment.py` |
-| 4.3 | Masquage d'actions invalides | `environment.py` |
-| 4.4 | Fonction de récompense potential-based | `rewards.py` |
+**Nouveau module** : `blokus-engine/src/blokus/rl/`
+
+| Étape | Description | Fichier | Dépendances |
+|-------|-------------|---------|-------------|
+| 4.1 | Structure module `rl/` | `rl/__init__.py` | - |
+| 4.2 | Observations (47 canaux) | `rl/observations.py` | 4.1 |
+| 4.3 | Espace d'actions + masquage (~6000 actions) | `rl/actions.py` | 4.1 |
+| 4.4 | Reward shaping (potential-based) | `rl/rewards.py` | 4.1 |
+| 4.5 | Environnement Gym (`BlokusEnv`) | `rl/environment.py` | 4.2, 4.3, 4.4 |
+| 4.6 | Tests unitaires RL | `tests/rl/` | 4.5 |
+| 4.7 | Validation (100 random rollouts) | `scripts/validate_env.py` | 4.6 |
+
+**Détail tenseur d'observation (47 canaux)** :
+
+- 0-3 : Occupation par joueur
+- 4-7 : Coins valides par joueur
+- 8-15 : Historique T-1, T-2
+- 16 : Numéro de tour (normalisé)
+- 17-37 : Pièces restantes (21 canaux)
+- 38-46 : Métadonnées (autres joueurs, flags)
 
 ---
 
 ## Phase 5 : Entraînement 🏋️
 
-**Objectif** : Entraîner un agent qui joue bien.
+**Objectif** : Entraîner un agent via self-play.
 
 | Étape | Description | Fichier |
 |-------|-------------|---------|
-| 5.1 | Architecture réseau CNN (PyTorch) | `networks.py` |
-| 5.2 | Entraînement DQN 2 joueurs | `agents/dqn.py` |
-| 5.3 | Transfer learning → 4 joueurs | `scripts/train.py` |
-| 5.4 | Sauvegarde et évaluation des modèles | `models/` |
+| 5.1 | Architecture réseau CNN (PyTorch) | `rl/networks.py` |
+| 5.2 | Agent DQN + Dueling + PER | `rl/agents/dqn.py` |
+| 5.3 | Script entraînement 2P self-play | `scripts/train_2p.py` |
+| 5.4 | Transfer learning → 4P | `scripts/train_4p.py` |
+| 5.5 | Registre modèles par profil | `models/registry.json` |
+
+**Curriculum Learning** :
+
+1. Phase 1 : 2P self-play (apprendre règles + patterns)
+2. Phase 2 : 4P vs random (adaptation multi-joueurs)
+3. Phase 3 : 4P self-play (stratégies compétitives)
+4. Phase 4 : vs best checkpoints (polish)
 
 ---
 
 ## Phase 6 : Intégration IA 🤖
 
-**Objectif** : Utiliser l'IA entraînée pour aider les joueurs.
+**Objectif** : Connecter les modèles entraînés à l'interface web.
 
 | Étape | Description | Fichier |
 |-------|-------------|---------|
-| 6.1 | Endpoint suggestion de coup | `main.py` |
-| 6.2 | Toggle aide IA dans l'interface | `ai.js` |
-| 6.3 | Affichage des suggestions sur le plateau | `board.js` |
+| 6.1 | Chargement modèle par persona | `api/ai_service.py` |
+| 6.2 | Endpoint `/ai/move` | `main.py` |
+| 6.3 | Client API IA côté JS | `js/ai.js` |
+| 6.4 | Joueur IA automatique | `js/game.js` |
+| 6.5 | Option "Suggestion" (highlight coup) | `js/board.js` |
+
+**Profils IA prévus** (déjà en UI) :
+
+- **Random** : Agent aléatoire (baseline)
+- **Agressif** : Favorise contact + blocage adversaires
+- **Défensif** : Consolidation territoire
+- **Efficace** : Minimise pièces restantes
 
 ---
 
 ## Ordre d'Exécution
 
 ```text
-Phase 1 ──┬──→ Phase 3 ──→ Phase 4 ──→ Phase 5 ──→ Phase 6
+Phase 1 ──┬──→ Phase 3.x ──→ Phase 4 ──→ Phase 5 ──→ Phase 6
 Phase 2 ──┘
 ```
-
-Les phases 1 et 2 peuvent être développées en parallèle.
-La phase 3 les connecte, puis les phases 4-6 ajoutent l'IA.
 
 ---
 
 ## Estimation
 
-| Phase | Durée estimée |
-|-------|---------------|
-| Phase 1 | 2-3 jours |
-| Phase 2 | 3-4 jours |
-| Phase 3 | 1 jour |
-| Phase 4 | 2 jours |
-| Phase 5 | Variable (entraînement) |
-| Phase 6 | 1 jour |
+| Phase | Durée estimée | Status |
+|-------|---------------|--------|
+| Phase 1 | 2-3 jours | ✅ TERMINÉ |
+| Phase 2 | 3-4 jours | ✅ TERMINÉ |
+| Phase 3-3.8 | 3 jours | ✅ TERMINÉ |
+| Phase 4 | 1-2 jours | 🚧 À faire |
+| Phase 5 | Variable (entraînement) | 🚧 À faire |
+| Phase 6 | 1 jour | 🚧 À faire |

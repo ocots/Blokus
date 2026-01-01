@@ -6,6 +6,11 @@ export class SetupManager {
         this.playerCountBtns = document.querySelectorAll('.toggle-btn[data-players]');
         this.startBtn = document.getElementById('btn-start-game');
 
+        // New Mode Selector Elements
+        this.modeSelector = document.getElementById('two-player-mode-selector');
+        this.modeBtns = document.querySelectorAll('.mode-btn');
+        this.twoPlayerMode = 'duo';
+
         this.playerCount = 4;
         this.DEFAULT_NAMES = ['Joueur 1', 'Joueur 2', 'Joueur 3', 'Joueur 4'];
         this.COLORS = ['#3b82f6', '#22c55e', '#eab308', '#ef4444']; // Blue, Green, Yellow, Red
@@ -24,9 +29,46 @@ export class SetupManager {
             });
         });
 
+        // Event Listeners for Mode Selector
+        this.modeBtns.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const mode = e.target.dataset.mode;
+                this.setMode(mode);
+            });
+        });
+
+        // Tooltip logic
+        const helpIcon = this.modeSelector.querySelector('.help-icon');
+        const tooltip = this.modeSelector.querySelector('.mode-tooltip');
+        const duoInfo = tooltip.querySelector('.duo-info');
+        const standardInfo = tooltip.querySelector('.standard-info');
+
+        helpIcon.addEventListener('mouseenter', () => {
+            tooltip.style.display = 'block';
+            // Show info based on current selection
+            if (this.twoPlayerMode === 'duo') {
+                duoInfo.style.display = 'block';
+                standardInfo.style.display = 'none';
+            } else {
+                duoInfo.style.display = 'none';
+                standardInfo.style.display = 'block';
+            }
+        });
+
+        helpIcon.addEventListener('mouseleave', () => {
+            tooltip.style.display = 'none';
+        });
+
         // Event Listener for Start Game
         this.startBtn.addEventListener('click', () => {
             this.startGame();
+        });
+    }
+
+    setMode(mode) {
+        this.twoPlayerMode = mode;
+        this.modeBtns.forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.mode === mode);
         });
     }
 
@@ -37,6 +79,13 @@ export class SetupManager {
         this.playerCountBtns.forEach(btn => {
             btn.classList.toggle('active', parseInt(btn.dataset.players) === count);
         });
+
+        // Show/Hide Mode Selector
+        if (count === 2) {
+            this.modeSelector.style.display = 'block';
+        } else {
+            this.modeSelector.style.display = 'none';
+        }
 
         this.renderPlayerInputs();
     }
@@ -140,7 +189,8 @@ export class SetupManager {
         const config = {
             playerCount: finalPlayerCount,
             players: players,
-            startPlayer: startPlayer
+            startPlayer: startPlayer,
+            twoPlayerMode: (this.playerCount === 2) ? this.twoPlayerMode : null
         };
 
         this.modal.classList.add('hidden');

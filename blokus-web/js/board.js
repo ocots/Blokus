@@ -17,6 +17,12 @@ export const STARTING_CORNERS = Object.freeze({
     3: [BOARD_SIZE - 1, 0]              // Bottom-left
 });
 
+/** Starting corners for Blokus Duo (14x14) */
+export const DUO_STARTING_CORNERS = Object.freeze({
+    0: [4, 4],    // Rules say (5,5) but 0-indexed is 4,4
+    1: [9, 9]     // Rules say (10,10) but 0-indexed is 9,9
+});
+
 /** Player colors matching CSS */
 export const PLAYER_COLORS = Object.freeze({
     0: '#3b82f6',  // Blue
@@ -61,6 +67,20 @@ export class Board {
 
         // Settings
         this.colorblindMode = false;
+        this.startingCorners = STARTING_CORNERS;
+    }
+
+    /**
+     * Initialize board with specific size (standard 20 or duo 14)
+     * @param {number} size 
+     * @param {Object} corners - Starting corners map
+     */
+    init(size = BOARD_SIZE, corners = STARTING_CORNERS) {
+        this.size = size;
+        this.cellSize = this.canvas.width / this.size; // Adjust cell size to fit canvas
+        this.startingCorners = corners;
+        this._grid = this._createEmptyGrid();
+        this.render();
     }
 
     /**
@@ -115,8 +135,8 @@ export class Board {
      * @private
      */
     _createEmptyGrid() {
-        return Array(BOARD_SIZE).fill(null)
-            .map(() => Array(BOARD_SIZE).fill(0));
+        return Array(this.size).fill(null)
+            .map(() => Array(this.size).fill(0));
     }
 
     /**
@@ -153,7 +173,7 @@ export class Board {
      * @param {number[][]} gridArray - 2D array of cell values (0-4)
      */
     setGridFromArray(gridArray) {
-        if (gridArray.length !== BOARD_SIZE || gridArray[0].length !== BOARD_SIZE) {
+        if (gridArray.length !== this.size || gridArray[0].length !== this.size) {
             console.error('Invalid grid size');
             return;
         }
@@ -218,7 +238,7 @@ export class Board {
         const playerCells = this.getPlayerCells(playerId);
 
         if (playerCells.length === 0) {
-            return [STARTING_CORNERS[playerId]];
+            return [this.startingCorners[playerId]];
         }
 
         const corners = [];
@@ -295,7 +315,7 @@ export class Board {
 
         // First move: must cover starting corner
         if (isFirstMove || playerCells.length === 0) {
-            const corner = STARTING_CORNERS[playerId];
+            const corner = this.startingCorners[playerId];
             const coversCorner = positions.some(([r, c]) => r === corner[0] && c === corner[1]);
             return coversCorner;
         }
@@ -468,17 +488,25 @@ export class Board {
 
         // Draw starting corners
         if (this._game) {
-            for (let p = 0; p < 4; p++) {
-                if (this.getPlayerCells(p).length === 0) {
-                    const [r, c] = STARTING_CORNERS[p];
-                    ctx.fillStyle = PLAYER_COLORS_LIGHT[p] + '40';
-                    ctx.fillRect(c * size, r * size, size, size);
+            for (let p = 0; p < (Object.keys(this.startingCorners).length); p++) {
+                if (this.startingCorners[p] && this.getPlayerCells(p).length === 0) {
+                    const [r, c] = this.startingCorners[p];
+                    if (this.isValidPosition(r, c)) { // Check bounds
+                        // Use correct color index
+                        const colorId = (this._game && this._game.players) ? this._game.players[p].colorIndex : p;
 
-                    // Corner marker
-                    ctx.beginPath();
-                    ctx.arc(c * size + size / 2, r * size + size / 2, 4, 0, Math.PI * 2);
-                    ctx.fillStyle = PLAYER_COLORS[p];
-                    ctx.fill();
+                        // Fallback if players object structure is simple
+                        const fillStyle = PLAYER_COLORS_LIGHT[p] + '40';
+
+                        ctx.fillStyle = fillStyle;
+                        ctx.fillRect(c * size, r * size, size, size);
+
+                        // Corner marker
+                        ctx.beginPath();
+                        ctx.arc(c * size + size / 2, r * size + size / 2, 4, 0, Math.PI * 2);
+                        ctx.fillStyle = PLAYER_COLORS[p];
+                        ctx.fill();
+                    }
                 }
             }
         }
