@@ -14,7 +14,15 @@
     <div class="app-container">
         <!-- Header -->
         <header class="header">
-            <h1 class="logo">🎮 Blokus</h1>
+            <h1 class="logo">
+                <div class="logo-4-squares small">
+                    <div class="sq blue"></div>
+                    <div class="sq green"></div>
+                    <div class="sq yellow"></div>
+                    <div class="sq red"></div>
+                </div>
+                <span>Blokus</span>
+            </h1>
             <div class="turn-indicator">
                 <span class="turn-label">Tour :</span>
                 <span id="current-player" class="player-badge player-0">Joueur 1</span>
@@ -42,6 +50,14 @@
                     <span id="name-3" class="score-label">Joueur 4</span>
                     <span id="score-3" class="score-value">0</span>
                 </div>
+                <div class="game-actions">
+                    <button id="btn-fullscreen" class="btn-secondary-outline" title="Plein écran">
+                        📺 Plein Écran
+                    </button>
+                    <button id="btn-quit" class="btn-danger-outline" title="Quitter la partie">
+                        🚪 Quitter
+                    </button>
+                </div>
             </aside>
             
             <!-- Game board (center) -->
@@ -56,6 +72,9 @@
                     </button>
                     <button id="btn-pass" class="control-btn btn-secondary" title="Passer (Espace)">
                         ⏭️ Passer (Esp)
+                    </button>
+                    <button id="btn-test-gameover" class="control-btn btn-secondary" title="Test fin de partie" style="opacity: 0.5;">
+                        🧪 Test Fin
                     </button>
                 </div>
             </section>
@@ -84,38 +103,70 @@
         <!-- Setup Modal -->
         <div id="setup-modal" class="modal">
             <div class="modal-content setup-content start-menu-layout">
-                <div class="game-brand">
-                    <div class="logo-4-squares">
-                        <div class="sq blue"></div>
-                        <div class="sq green"></div>
-                        <div class="sq yellow"></div>
-                        <div class="sq red"></div>
-                    </div>
-                    <h1 class="brand-title">BLOKUS</h1>
-                </div>
-            
-                <h2 class="section-title">Nouvelle Partie</h2>
-        
-                <div class="setup-section">
-                    <label>Nombre de joueurs :</label>
-                    <div class="toggle-group">
-                        <button class="toggle-btn" data-players="2">2</button>
-                        <button class="toggle-btn" data-players="3">3</button>
-                        <button class="toggle-btn active" data-players="4">4</button>
+                <!-- Left: Branding -->
+                <div class="menu-left">
+                    <div class="game-brand">
+                        <div class="logo-4-squares">
+                            <div class="sq blue"></div>
+                            <div class="sq green"></div>
+                            <div class="sq yellow"></div>
+                            <div class="sq red"></div>
+                        </div>
+                        <h1 class="brand-title">BLOKUS</h1>
                     </div>
                 </div>
-        
-                <div class="setup-section">
-                    <label class="checkbox-label">
-                        <input type="checkbox" id="colorblind-mode">
-                        <span>Mode Daltonien (Motifs)</span>
-                    </label>
-                </div>
-        
-                <div id="players-config" class="players-config">
-                    <!-- Dynamic player inputs -->
-                </div>
-<div class="setup-section">
+
+                <!-- Center: Config -->
+                <div class="menu-center">
+                    <h2 class="section-title">Nouvelle Partie</h2>
+                    <div class="setup-section compact-section">
+                        <label>Nombre de joueurs :</label>
+                        <div class="toggle-group">
+                            <button class="toggle-btn" data-players="2">2</button>
+                            <button class="toggle-btn" data-players="3">3</button>
+                            <button class="toggle-btn active" data-players="4">4</button>
+                        </div>
+                    </div>
+
+                    <!-- 2-Player Mode Selector -->
+                    <div id="two-player-mode-selector" class="mode-selector" style="display: none;">
+                        <label class="mode-label">
+                            Mode de jeu
+                            <span class="help-icon" title="Voir les différences">?</span>
+                        </label>
+                        <div class="mode-buttons">
+                            <button class="mode-btn active" data-mode="duo">
+                                Blokus Duo
+                            </button>
+                            <button class="mode-btn" data-mode="standard">
+                                Blokus Standard
+                            </button>
+                        </div>
+                        <div class="mode-tooltip" style="display: none;">
+                            <div class="tooltip-content duo-info">
+                                <strong>Blokus Duo</strong><br>
+                                • Plateau 14×14<br>
+                                • 1 couleur par joueur<br>
+                                • Départs : (5,5) et (10,10)
+                            </div>
+                            <div class="tooltip-content standard-info" style="display: none;">
+                                <strong>Blokus Standard</strong><br>
+                                • Plateau 20×20<br>
+                                • 2 couleurs par joueur<br>
+                                • Coins opposés en diagonale
+                            </div>
+                        </div>
+                    </div>
+                    <div class="setup-section compact-section">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="colorblind-mode">
+                            <span>Mode Daltonien (Motifs)</span>
+                        </label>
+                    </div>
+                    <div id="players-config" class="players-config compact-config">
+                        <!-- Dynamic player inputs -->
+                    </div>
+<div class="setup-section compact-section">
     <label>Qui commence ?</label>
     <select id="start-player-select" class="setup-input">
         <option value="random">Aléatoire</option>
@@ -125,7 +176,13 @@
         <option value="3">Joueur 4</option>
     </select>
 </div>
-<button id="btn-start-game" class="btn-primary">Lancer la partie</button>
+                </div>
+                
+                <!-- Right: Action -->
+                <div class="menu-right">
+                    <button id="btn-start-game" class="btn-primary btn-start-large">JOUER</button>
+                </div>
+
             </div>
         </div>
 
@@ -134,7 +191,10 @@
             <div class="modal-content">
                 <h2>🏆 Partie terminée !</h2>
                 <div id="final-scores" class="final-scores"></div>
-                <button id="btn-new-game" class="btn-primary">Nouvelle partie</button>
+                <div class="modal-buttons">
+                    <button id="btn-new-game" class="btn-primary">Nouvelle partie</button>
+                    <button id="btn-return-menu" class="btn-secondary">Retour au menu</button>
+                    </div>
             </div>
         </div>
     </div>
