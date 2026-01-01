@@ -79,6 +79,7 @@ Spécification de l'interface web pour jouer à Blokus.
 - **Apparition** : Au chargement de la page (overlay bloquant).
 - **Options Globales** :
   - **Nombre de Joueurs** : 2, 3 ou 4.
+  - **Mode de Jeu** : "Standard" (20x20) ou "Duo" (14x14) - *Visible uniquement si 2 joueurs*.
   - **Premier Joueur** : "Aléatoire" ou choix spécifique (J1..J4).
 - **Configuration Individuelle (par joueur)** :
   - **Nom** : Champ texte (ex: "Papa", "IA Tueur").
@@ -114,6 +115,16 @@ Spécification de l'interface web pour jouer à Blokus.
 - **Symétrie** : Bouton 🔃 ou touche `S` (Miroir horizontal).
 - **Passer** : Bouton ⏭️ ou touche `Espace` (Si aucun coup possible).
 - **Annuler Sélection** : Touche `Escape`.
+
+### 3. Fin de Partie (Modal)
+
+- **Déclenchement** : Quand plus aucun joueur ne peut jouer.
+- **Affichage** :
+  - Classement final des joueurs.
+  - Vainqueur mis en avant.
+- **Actions** :
+  - Bouton "Rejouer" (relance avec même config).
+  - Bouton "Retour au Menu" (retour à l'écran d'accueil).
 
 ---
 

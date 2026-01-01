@@ -14,13 +14,32 @@ from blokus.pieces import Piece
 
 BOARD_SIZE = 20
 
-# Starting corners for each player (0-indexed)
+# Starting corners for each player (0-indexed) - Standard 20×20
 STARTING_CORNERS: dict[int, Tuple[int, int]] = {
     0: (0, 0),                          # Player 0: top-left
     1: (0, BOARD_SIZE - 1),             # Player 1: top-right
     2: (BOARD_SIZE - 1, BOARD_SIZE - 1),# Player 2: bottom-right
     3: (BOARD_SIZE - 1, 0),             # Player 3: bottom-left
 }
+
+# Starting corners for Duo mode (14×14)
+DUO_STARTING_CORNERS: dict[int, Tuple[int, int]] = {
+    0: (4, 4),   # Player 0: near top-left
+    1: (9, 9),   # Player 1: near bottom-right
+}
+
+
+def get_starting_corners_for_size(size: int) -> dict[int, Tuple[int, int]]:
+    """Get appropriate starting corners for a board size."""
+    if size == 14:
+        return DUO_STARTING_CORNERS
+    else:
+        return {
+            0: (0, 0),
+            1: (0, size - 1),
+            2: (size - 1, size - 1),
+            3: (size - 1, 0),
+        }
 
 
 @dataclass
@@ -31,19 +50,29 @@ class Board:
     Attributes:
         grid: 2D numpy array where 0=empty, 1-4=player occupying
         size: Board dimension (default 20)
+        starting_corners: Dict mapping player_id to starting corner position
     """
     size: int = BOARD_SIZE
     grid: np.ndarray = field(default=None)
+    starting_corners: dict = field(default=None)
     
     def __post_init__(self):
         if self.grid is None:
             self.grid = np.zeros((self.size, self.size), dtype=np.int8)
+        if self.starting_corners is None:
+            self.starting_corners = get_starting_corners_for_size(self.size)
     
     def copy(self) -> "Board":
         """Create a deep copy of the board."""
-        new_board = Board(size=self.size)
+        new_board = Board(size=self.size, starting_corners=self.starting_corners.copy())
         new_board.grid = self.grid.copy()
         return new_board
+    
+    def get_starting_corners(self, player_id: int) -> Set[Tuple[int, int]]:
+        """Get starting corner position(s) for a player."""
+        if player_id in self.starting_corners:
+            return {self.starting_corners[player_id]}
+        return set()
     
     def is_empty(self, row: int, col: int) -> bool:
         """Check if a cell is empty."""
@@ -101,7 +130,7 @@ class Board:
         
         if not player_cells:
             # First move: must use starting corner
-            return {STARTING_CORNERS[player_id]}
+            return self.get_starting_corners(player_id)
         
         corners: Set[Tuple[int, int]] = set()
         

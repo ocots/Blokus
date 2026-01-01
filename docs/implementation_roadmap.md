@@ -82,7 +82,7 @@ Roadmap détaillé pour le développement du projet.
 | 3.8.2 | **UX** : Bouton Quitter & Gestion Fin de Partie | `index.html`, `style.css` |
 | 3.8.3 | **Refonte Menu** : Layout Horizontal | `index.html`, `style.css` |
 
-## Phase 4 : Environnement RL 🧠
+## Phase 4 : Environnement RL 🧠 - **TERMINÉ**
 
 **Objectif** : Wrapper le jeu pour l'apprentissage par renforcement.
 
@@ -90,13 +90,13 @@ Roadmap détaillé pour le développement du projet.
 
 | Étape | Description | Fichier | Dépendances |
 |-------|-------------|---------|-------------|
-| 4.1 | Structure module `rl/` | `rl/__init__.py` | - |
-| 4.2 | Observations (47 canaux) | `rl/observations.py` | 4.1 |
-| 4.3 | Espace d'actions + masquage (~6000 actions) | `rl/actions.py` | 4.1 |
-| 4.4 | Reward shaping (potential-based) | `rl/rewards.py` | 4.1 |
-| 4.5 | Environnement Gym (`BlokusEnv`) | `rl/environment.py` | 4.2, 4.3, 4.4 |
-| 4.6 | Tests unitaires RL | `tests/rl/` | 4.5 |
-| 4.7 | Validation (100 random rollouts) | `scripts/validate_env.py` | 4.6 |
+| 4.1 | Structure module `rl/` | `rl/__init__.py` | ✅ |
+| 4.2 | Observations (47 canaux) | `rl/observations.py` | ✅ |
+| 4.3 | Espace d'actions + masquage (~6000 actions) | `rl/actions.py` | ✅ |
+| 4.4 | Reward shaping (potential-based) | `rl/rewards.py` | ✅ |
+| 4.5 | Environnement Gym (`BlokusEnv`) | `rl/environment.py` | ✅ |
+| 4.6 | Tests unitaires RL | `tests/rl/` | ✅ |
+| 4.7 | Validation (100 random rollouts) | `scripts/validate_env.py` | ✅ |
 
 **Détail tenseur d'observation (47 canaux)** :
 
@@ -109,17 +109,19 @@ Roadmap détaillé pour le développement du projet.
 
 ---
 
-## Phase 5 : Entraînement 🏋️
+## Phase 5 : Entraînement 🏋️ - **EN COURS**
 
 **Objectif** : Entraîner un agent via self-play.
 
-| Étape | Description | Fichier |
-|-------|-------------|---------|
-| 5.1 | Architecture réseau CNN (PyTorch) | `rl/networks.py` |
-| 5.2 | Agent DQN + Dueling + PER | `rl/agents/dqn.py` |
-| 5.3 | Script entraînement 2P self-play | `scripts/train_2p.py` |
-| 5.4 | Transfer learning → 4P | `scripts/train_4p.py` |
-| 5.5 | Registre modèles par profil | `models/registry.json` |
+| Étape | Description | Fichier | État |
+|-------|-------------|---------|------|
+| 5.1 | Infrastructure (Config, Checkpoints, Metrics) | `rl/training/` | ✅ |
+| 5.2 | Dashboard de suivi (Streamlit) | `rl/visualization/dashboard.py` | ✅ |
+| 5.3 | Architecture réseau CNN (PyTorch) | `rl/networks.py` | 🚧 |
+| 5.4 | Agent DQN + Dueling + PER | `rl/agents/dqn.py` | 🚧 |
+| 5.5 | Script entraînement 2P self-play | `scripts/train_2p.py` | 🚧 |
+| 5.6 | Transfer learning → 4P | `scripts/train_4p.py` | 📅 |
+| 5.7 | Registre modèles par profil | `models/registry.json` | 📅 |
 
 **Curriculum Learning** :
 
@@ -167,6 +169,6 @@ Phase 2 ──┘
 | Phase 1 | 2-3 jours | ✅ TERMINÉ |
 | Phase 2 | 3-4 jours | ✅ TERMINÉ |
 | Phase 3-3.8 | 3 jours | ✅ TERMINÉ |
-| Phase 4 | 1-2 jours | 🚧 À faire |
-| Phase 5 | Variable (entraînement) | 🚧 À faire |
+| Phase 4 | 2 jours | ✅ TERMINÉ |
+| Phase 5 | Variable (entraînement) | 🚧 EN COURS |
 | Phase 6 | 1 jour | 🚧 À faire |

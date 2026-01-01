@@ -63,6 +63,26 @@ Historique des choix techniques et leur justification.
 
 ---
 
+## 2026-01-01 : Phase 5 - Infrastructure RL
+
+### Gestion des Checkpoints
+
+| Décision | Description | Justification |
+|----------|-------------|---------------|
+| **Hiérarchie Dossiers** | `models/experiments/{name}/` | Organisation claire pour comparer les runs. |
+| **État Complet** | Sauvegarde `model`, `optimizer`, `replay_buffer`, `metadata`. | Reprise exacte de l'entraînement sans perte. |
+| **JSON Metadata** | Fichier `metadata.json` séparé. | Lecture rapide des stats (win rate, steps) sans charger les poids lourds. |
+
+### Métriques et Visualisation
+
+| Outil | Usage | Pourquoi ? |
+|-------|-------|------------|
+| **CSV Logging** | `metrics.csv` (append mode). | Simple, portable, parsable par Pandas (Dashboard). |
+| **TensorBoard** | Via `SummaryWriter`. | Standard de l'industrie pour les courbes de loss détaillées. |
+| **Streamlit** | Dashboard interactif (`dashboard.py`). | UX supérieure à TB pour trier/comparer les expériences (custom KPIs). |
+
+---
+
 ## Décisions à Venir
 
 - [ ] Taille exacte du réseau (64 vs 128 filtres)
