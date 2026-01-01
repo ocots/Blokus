@@ -652,3 +652,116 @@ body {
 .scores-bar {
     display: none;
 }
+
+/* =============================================================================
+   START MENU & BRANDING
+   ============================================================================= */
+
+.start-menu-layout {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+    padding: 2.5rem;
+    width: 100%;
+    max-width: 480px !important;
+    background: linear-gradient(145deg, var(--bg-secondary), #2a2a45);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.game-brand {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 0.5rem;
+    animation: float 6s ease-in-out infinite;
+}
+
+@keyframes float {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-10px);
+    }
+}
+
+.logo-4-squares {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+    gap: 4px;
+    width: 90px;
+    height: 90px;
+    padding: 6px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 16px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    transform: rotate(-10deg);
+    /* Slight tilt for dynamism */
+}
+
+.logo-4-squares .sq {
+    width: 100%;
+    height: 100%;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: inset 0 2px 6px rgba(255, 255, 255, 0.3), inset 0 -2px 6px rgba(0, 0, 0, 0.2);
+    position: relative;
+    overflow: hidden;
+}
+
+/* Glassy shine effect */
+.logo-4-squares .sq::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 40%;
+    background: linear-gradient(to bottom, rgba(255, 255, 255, 0.4), transparent);
+    border-radius: 6px 6px 0 0;
+}
+
+.logo-4-squares .sq.blue {
+    background: var(--player-0);
+}
+
+.logo-4-squares .sq.green {
+    background: var(--player-1);
+}
+
+.logo-4-squares .sq.yellow {
+    background: var(--player-2);
+}
+
+.logo-4-squares .sq.red {
+    background: var(--player-3);
+}
+
+.brand-title {
+    font-size: 3rem;
+    font-weight: 900;
+    letter-spacing: 4px;
+    background: linear-gradient(to right, #ffffff, #a0a0b0);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-transform: uppercase;
+    text-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    margin-top: 0.5rem;
+}
+
+.section-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 0.5rem;
+    opacity: 0.9;
+}
