@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blokus</title>
+    <meta name="description" content="Jouez à Blokus en ligne - Jeu de stratégie abstrait pour 2-4 joueurs">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="header">
+            <h1 class="logo">🎮 Blokus</h1>
+            <div class="turn-indicator">
+                <span class="turn-label">Tour :</span>
+                <span id="current-player" class="player-badge player-0">Joueur 1</span>
+            </div>
+        </header>
+
+        <!-- Main content: Scores | Board | Pieces -->
+        <main class="main-content">
+            <!-- Scores sidebar (left) -->
+            <aside class="scores-sidebar">
+                <div class="score-title">Scores</div>
+                <div class="score-item player-0">
+                    <span id="name-0" class="score-label">Joueur 1</span>
+                    <span id="score-0" class="score-value">0</span>
+                </div>
+                <div class="score-item player-1">
+                    <span id="name-1" class="score-label">Joueur 2</span>
+                    <span id="score-1" class="score-value">0</span>
+                </div>
+                <div class="score-item player-2">
+                    <span id="name-2" class="score-label">Joueur 3</span>
+                    <span id="score-2" class="score-value">0</span>
+                </div>
+                <div class="score-item player-3">
+                    <span id="name-3" class="score-label">Joueur 4</span>
+                    <span id="score-3" class="score-value">0</span>
+                </div>
+            </aside>
+            
+            <!-- Game board (center) -->
+            <section class="board-section">
+                <canvas id="game-board" width="600" height="600"></canvas>
+                <div class="board-controls">
+                    <button id="btn-rotate" class="control-btn" title="Rotation (R)">
+                        🔄 Rotation (R)
+                    </button>
+                    <button id="btn-flip" class="control-btn" title="Symétrie (S)">
+                        🔃 Symétrie (S)
+                    </button>
+                    <button id="btn-pass" class="control-btn btn-secondary" title="Passer (Espace)">
+                        ⏭️ Passer (Esp)
+                    </button>
+                </div>
+            </section>
+
+            <!-- Right panel: Pieces + Selected piece preview -->
+            <div class="right-panel">
+                <!-- Pieces panel (top, large) -->
+                <section class="pieces-panel">
+                    <h2 class="panel-title">Pièces disponibles</h2>
+                    <div id="pieces-container" class="pieces-container">
+                        <!-- Pieces will be rendered here -->
+                    </div>
+                </section>
+                
+                <!-- Selected piece preview (bottom-left) + spacer -->
+                <div class="selected-piece-section">
+                    <div class="selected-piece-preview">
+                        <h3>Sélection</h3>
+                        <canvas id="piece-preview" width="120" height="100"></canvas>
+                        </div>
+                    <div class="right-panel-spacer"></div>
+                    </div>
+                    </div>
+        </main>
+
+        <!-- Setup Modal -->
+        <div id="setup-modal" class="modal">
+            <div class="modal-content setup-content">
+                <h2>⚙️ Configuration</h2>
+        
+                <div class="setup-section">
+                    <label>Nombre de joueurs :</label>
+                    <div class="toggle-group">
+                        <button class="toggle-btn" data-players="2">2</button>
+                        <button class="toggle-btn" data-players="3">3</button>
+                        <button class="toggle-btn active" data-players="4">4</button>
+                    </div>
+                </div>
+        
+                <div class="setup-section">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="colorblind-mode">
+                        <span>Mode Daltonien (Motifs)</span>
+                    </label>
+                </div>
+        
+                <div id="players-config" class="players-config">
+                    <!-- Dynamic player inputs -->
+                </div>
+<div class="setup-section">
+    <label>Qui commence ?</label>
+    <select id="start-player-select" class="setup-input">
+        <option value="random">Aléatoire</option>
+        <option value="0">Joueur 1</option>
+        <option value="1">Joueur 2</option>
+        <option value="2">Joueur 3</option>
+        <option value="3">Joueur 4</option>
+    </select>
+</div>
+<button id="btn-start-game" class="btn-primary">Lancer la partie</button>
+            </div>
+        </div>
+
+        <!-- Game over modal -->
+        <div id="game-over-modal" class="modal hidden">
+            <div class="modal-content">
+                <h2>🏆 Partie terminée !</h2>
+                <div id="final-scores" class="final-scores"></div>
+                <button id="btn-new-game" class="btn-primary">Nouvelle partie</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts (ES6 Modules) -->
+    <script type="module" src="js/main.js"></script>
+</body>
+</html>

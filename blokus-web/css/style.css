@@ -1,0 +1,654 @@
+/* =============================================================================
+   BLOKUS - Main Stylesheet
+   Modern, dark theme with vibrant player colors
+   New layout: Scores left | Board center | Pieces panel right
+   ============================================================================= */
+
+:root {
+    /* Color palette */
+    --bg-primary: #0f0f1a;
+    --bg-secondary: #1a1a2e;
+    --bg-tertiary: #252540;
+    --text-primary: #f0f0f5;
+    --text-secondary: #a0a0b0;
+    --accent: #6366f1;
+    --accent-hover: #818cf8;
+    
+    /* Player colors - vibrant and distinct */
+    --player-0: #3b82f6;  /* Blue */
+    --player-1: #22c55e;  /* Green */
+    --player-2: #eab308;  /* Yellow */
+    --player-3: #ef4444;  /* Red */
+    
+    --player-0-light: #60a5fa;
+    --player-1-light: #4ade80;
+    --player-2-light: #facc15;
+    --player-3-light: #f87171;
+    
+    /* Board colors */
+    --board-bg: #e8e4dc;
+    --board-grid: #d0ccc4;
+    --valid-border: #22c55e;
+        --invalid-border: #ef4444;
+    
+    /* Shadows */
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.5);
+    
+    /* Transitions */
+    --transition-fast: 150ms ease;
+    --transition-normal: 250ms ease;
+    /* Layout dimensions */
+        --board-size: 600px;
+        --cell-size: 30px;
+}
+
+/* Reset & Base */
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html {
+    font-size: 16px;
+}
+
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    min-height: 100vh;
+    line-height: 1.5;
+}
+
+/* App Container */
+.app-container {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    padding: 1rem;
+}
+
+/* =============================================================================
+   HEADER
+   ============================================================================= */
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1.5rem;
+    background: var(--bg-secondary);
+    border-radius: 12px;
+    margin-bottom: 1rem;
+    box-shadow: var(--shadow-md);
+}
+
+.logo {
+    font-size: 1.5rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--player-0), var(--player-1), var(--player-2), var(--player-3));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.turn-indicator {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.turn-label {
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.player-badge {
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    font-weight: 600;
+    color: white;
+    box-shadow: var(--shadow-sm);
+    transition: transform var(--transition-fast);
+}
+
+.player-badge.player-0 { background: var(--player-0); }
+.player-badge.player-1 { background: var(--player-1); }
+.player-badge.player-2 { background: var(--player-2); color: #1a1a2e; }
+.player-badge.player-3 { background: var(--player-3); }
+
+/* =============================================================================
+   MAIN CONTENT - New Layout Layout: [Scores] [Board] [Pieces Panel+Selected Piece]
+   ============================================================================= */
+
+.main-content {
+    display: flex;
+    gap: 1.5rem;
+    flex: 1;
+    align-items: flex-start;
+}
+
+/* =============================================================================
+   SCORES SIDEBAR (Left)
+   ============================================================================= */
+
+.scores-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding: 1rem;
+    background: var(--bg-secondary);
+    border-radius: 12px;
+    box-shadow: var(--shadow-md);
+    min-width: 140px;
+}
+
+.scores-sidebar .score-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--bg-tertiary);
+}
+
+.score-item {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+    padding: 0.75rem;
+    border-radius: 8px;
+    transition: all var(--transition-fast);
+    min-width: 120px;
+}
+
+.score-item.active {
+    background: var(--bg-tertiary);
+    transform: scale(1.02);
+}
+
+.score-item.player-0 {
+    border-left: 4px solid var(--player-0);
+}
+
+.score-item.player-1 {
+    border-left: 4px solid var(--player-1);
+}
+
+.score-item.player-2 {
+    border-left: 4px solid var(--player-2);
+}
+
+.score-item.player-3 {
+    border-left: 4px solid var(--player-3);
+}
+
+.score-label {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.score-value {
+    font-size: 1.25rem;
+    font-weight: 700;
+}
+
+/* =============================================================================
+   BOARD SECTION (Center)
+   ============================================================================= */
+.board-section {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+#game-board {
+    background: var(--board-bg);
+    border-radius: 12px;
+    box-shadow: var(--shadow-lg);
+    cursor: crosshair;
+    /* Ensure crisp rendering */
+        image-rendering: -webkit-optimize-contrast;
+        image-rendering: crisp-edges;
+}
+
+.board-controls {
+    display: flex;
+    gap: 0.75rem;
+}
+
+.control-btn {
+    flex: 1;
+    padding: 0.75rem 1rem;
+    border: none;
+    border-radius: 8px;
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    box-shadow: var(--shadow-sm);
+}
+
+.control-btn:hover {
+    background: var(--accent);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.control-btn:active {
+    transform: translateY(0);
+}
+
+.control-btn.btn-secondary {
+    background: var(--bg-secondary);
+}
+
+.control-btn.btn-secondary:hover {
+    background: #4a4a6a;
+}
+
+/* =============================================================================
+   PIECES PANEL (Right side, top)
+   Width: same as board (600px)
+   Height: 3/4 of board (450px)
+   ============================================================================= */
+
+.right-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    width: 650px;
+    height: 600px;
+    /* Match board height for alignment */
+}
+.pieces-panel {
+    background: var(--bg-secondary);
+    border-radius: 12px 12px 0 0;
+        padding: 1rem;
+    box-shadow: var(--shadow-md);
+    height: 350px;
+        /* Reduced height to fit 3 rows comfortably */
+    display: flex;
+    flex-direction: column;
+}
+
+.panel-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    border-bottom: 1px solid var(--bg-tertiary);
+    padding-bottom: 0.75rem;
+    margin-bottom: 0.75rem;
+}
+
+.pieces-container {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 0.5rem;
+    flex: 1;
+    overflow-x: auto;
+        overflow-y: hidden;
+        padding: 0.5rem;
+        /* Padding on all sides for selection border visibility */
+    }
+    
+    /* Custom scrollbar for pieces */
+    .pieces-container::-webkit-scrollbar {
+        width: 6px;
+    }
+    
+    .pieces-container::-webkit-scrollbar-track {
+        background: var(--bg-tertiary);
+        border-radius: 3px;
+    }
+    
+    .pieces-container::-webkit-scrollbar-thumb {
+        background: var(--accent);
+        border-radius: 3px;
+}
+
+.piece-item {
+    aspect-ratio: 1;
+    background: var(--bg-tertiary);
+    border-radius: 8px;
+    cursor: grab;
+    transition: all var(--transition-fast);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px;
+}
+
+.piece-item:hover {
+    transform: scale(1.05);
+    box-shadow: var(--shadow-md);
+}
+
+.piece-item.selected {
+    box-shadow: 0 0 0 3px var(--accent);
+    transform: scale(1.05);
+}
+
+.piece-item.used {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+.piece-item canvas {
+    max-width: 100%;
+    max-height: 100%;
+    /* Ensure crisp rendering */
+        image-rendering: -webkit-optimize-contrast;
+        image-rendering: crisp-edges;
+}
+
+/* =============================================================================
+   SELECTED PIECE PREVIEW (Right side, bottom-left of right panel) Width: 1/4 of board (150px) Square shape
+   ============================================================================= */
+
+.selected-piece-section {
+    display: flex;
+    gap: 0;
+        flex: 1;
+        /* Push to bottom by taking remaining space */
+        align-items: flex-end;
+        /* Align content to bottom */
+    }
+        .selected-piece-preview {
+            width: 150px;
+            /* 1/4 of 600px */
+            height: 150px;
+            background: var(--bg-secondary);
+            border-radius: 0 0 0 12px;
+            padding: 0.75rem;
+            box-shadow: var(--shadow-md);
+    display: flex;
+    flex-direction: column;
+}
+
+.selected-piece-preview h3 {
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    margin-bottom: 0.5rem;
+}
+
+#piece-preview {
+    flex: 1;
+    background: var(--bg-tertiary);
+    border-radius: 6px;
+    width: 100%;
+    /* Ensure crisp rendering - no blur */
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+    image-rendering: pixelated;
+}
+
+/* Empty space filler next to selected piece */
+.right-panel-spacer {
+    flex: 1;
+    background: transparent;
+}
+
+/* =============================================================================
+   MODAL
+   ============================================================================= */
+
+.modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    backdrop-filter: blur(4px);
+}
+
+.modal.hidden {
+    display: none;
+}
+
+.modal-content {
+    background: var(--bg-secondary);
+    padding: 2rem;
+    border-radius: 16px;
+    text-align: center;
+    max-width: 400px;
+    box-shadow: var(--shadow-lg);
+    animation: modalIn 0.3s ease;
+}
+
+@keyframes modalIn {
+    from {
+        opacity: 0;
+        transform: scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.modal-content h2 {
+    font-size: 1.75rem;
+    margin-bottom: 1.5rem;
+    text-align: center;
+    }
+    
+    /* Setup Modal Specifics */
+    .setup-content {
+        max-width: 500px;
+        width: 90%;
+        text-align: left;
+    }
+    
+    .setup-section {
+        margin-bottom: 1.5rem;
+    }
+    
+    .setup-section label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 600;
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+    }
+    
+    .toggle-group {
+        display: flex;
+        gap: 0.25rem;
+        background: var(--bg-tertiary);
+        padding: 0.25rem;
+        border-radius: 8px;
+    }
+    
+    .toggle-btn {
+        flex: 1;
+        padding: 0.5rem;
+        border: none;
+        background: transparent;
+        color: var(--text-secondary);
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: 600;
+        transition: all var(--transition-fast);
+    }
+    
+    .toggle-btn:hover {
+        color: var(--text-primary);
+        background: rgba(255, 255, 255, 0.05);
+    }
+    
+    .toggle-btn.active {
+        background: var(--bg-secondary);
+        color: var(--text-primary);
+        box-shadow: var(--shadow-sm);
+    }
+    
+    .players-config {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+        margin-bottom: 1.5rem;
+        max-height: 350px;
+        overflow-y: auto;
+    }
+    
+    .player-config-row {
+        display: grid;
+        grid-template-columns: auto 1fr auto auto;
+        gap: 0.75rem;
+        align-items: center;
+        padding: 0.75rem;
+        background: var(--bg-tertiary);
+        border-radius: 8px;
+        border-left: 4px solid transparent;
+    }
+    
+    .player-config-row.p0 {
+        border-left-color: var(--player-0);
+    }
+    
+    .player-config-row.p1 {
+        border-left-color: var(--player-1);
+    }
+    
+    .player-config-row.p2 {
+        border-left-color: var(--player-2);
+    }
+    
+    .player-config-row.p3 {
+        border-left-color: var(--player-3);
+    }
+    
+    .setup-input {
+        width: 100%;
+        padding: 0.5rem 0.75rem;
+        border-radius: 6px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: var(--bg-secondary);
+        color: white;
+        font-family: inherit;
+        font-size: 0.95rem;
+    }
+    
+    .setup-input:focus {
+        outline: none;
+        border-color: var(--accent);
+    }
+    
+    .type-select {
+        width: 100px;
+    }
+    
+    .persona-select {
+        width: 120px;
+    }
+    
+    .btn-start {
+        width: 100%;
+        margin-top: 1rem;
+}
+
+.final-scores {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+}
+
+.final-score-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.75rem 1rem;
+    background: var(--bg-tertiary);
+    border-radius: 8px;
+}
+
+.btn-primary {
+    padding: 0.875rem 2rem;
+    border: none;
+    border-radius: 8px;
+    background: var(--accent);
+    color: white;
+    font-family: inherit;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.btn-primary:hover {
+    background: var(--accent-hover);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+/* =============================================================================
+   RESPONSIVE
+   ============================================================================= */
+
+@media (max-width: 1200px) {
+    .main-content {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                .scores-sidebar {
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    flex-direction: row;
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    width: 100%;
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    min-width: unset;
+    }
+    
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                .scores-sidebar .score-title {
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    display: none;
+    }
+    
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                .right-panel {
+        width: 100%;
+        max-width: var(--board-size);
+        }
+        
+        .pieces-panel {
+        height: auto;
+        max-height: 300px;
+        }
+        
+        .selected-piece-preview {
+            width: 120px;
+            height: 120px;
+    }
+}
+
+@media (max-width: 700px) {
+    .header {
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+    
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                .pieces-container {
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    grid-template-columns: repeat(5, 1fr);
+    }
+    
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                #game-board {
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    width: 100%;
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    height: auto;
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    aspect-ratio: 1;
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                }
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                }
+/* =============================================================================
+   HIDE OLD SCORES BAR (replaced by sidebar)
+   ============================================================================= */
+
+.scores-bar {
+    display: none;
+}

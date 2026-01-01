@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blokus - Tests</title>
+    <style>
+        body {
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            background: #1a1a2e;
+            color: #f0f0f5;
+            padding: 2rem;
+            line-height: 1.6;
+        }
+        
+        h1 {
+            color: #6366f1;
+            margin-bottom: 1rem;
+        }
+        
+        #test-output {
+            background: #0f0f1a;
+            padding: 1rem;
+            border-radius: 8px;
+            white-space: pre-wrap;
+            font-size: 14px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        
+        .summary {
+            margin-top: 1rem;
+            padding: 1rem;
+            border-radius: 8px;
+        }
+        
+        .summary.pass {
+            background: rgba(34, 197, 94, 0.2);
+            border: 1px solid #22c55e;
+        }
+        
+        .summary.fail {
+            background: rgba(239, 68, 68, 0.2);
+            border: 1px solid #ef4444;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Blokus JavaScript Tests</h1>
+    <div id="test-output">Loading tests...</div>
+    <div id="summary" class="summary"></div>
+
+    <script type="module">
+        import { resetTests, printSummary, getResults } from './test-framework.js';
+        
+        // Import all test modules (they run on import via describe/test)
+        import './test-pieces.js';
+        import './test-board.js';
+        
+        // Redirect console to output div
+        const output = document.getElementById('test-output');
+        const summary = document.getElementById('summary');
+        let logs = [];
+        
+        const originalLog = console.log;
+        const originalError = console.error;
+        
+        console.log = (...args) => {
+            originalLog(...args);
+            logs.push(args.join(' '));
+        };
+        
+        console.error = (...args) => {
+            originalError(...args);
+            logs.push(args.join(' '));
+        };
+        
+        // Run tests and display
+        setTimeout(() => {
+            const results = printSummary();
+            
+            output.textContent = logs.join('\n');
+            
+            if (results.failed === 0) {
+                summary.className = 'summary pass';
+                summary.innerHTML = `✅ All ${results.passed} tests passed!`;
+            } else {
+                summary.className = 'summary fail';
+                summary.innerHTML = `❌ ${results.failed} tests failed out of ${results.passed + results.failed}`;
+            }
+        }, 100);
+    </script>
+</body>
+</html>

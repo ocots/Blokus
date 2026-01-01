@@ -1,0 +1,522 @@
+/**
+ * Blokus Game Manager
+ * Handles game state, turns, scoring
+ * @module game
+ */
+
+import { PIECES, getPiece, getAllPieceTypes, PieceType } from './pieces.js';
+
+/**
+ * Game class manages the overall game state.
+ * Supports two modes:
+ * - Local mode (default): All logic runs in JavaScript
+ * - API mode: Delegates to Python backend via injected API client
+ */
+export class Game {
+    /**
+     * @param {Object} board - Board instance
+     * @param {Object} controls - Controls instance
+     * @param {Object|number} config - Configuration object or number of players
+     * @param {Object|null} apiClient - Optional API client for server mode
+     */
+    constructor(board, controls, config = { playerCount: 4 }, apiClient = null) {
+        // Handle legacy number argument
+        if (typeof config === 'number') {
+            config = { playerCount: config };
+        }
+
+        this._board = board;
+        this._controls = controls;
+        this._config = config;
+        this._numPlayers = config.playerCount || 4;
+        this._apiClient = apiClient;
+
+        this._currentPlayer = 0;
+        this._players = [];
+        this._moveHistory = [];
+        this._gameOver = false;
+        this._useApi = apiClient !== null;
+
+        // Inject game reference into dependencies
+        this._board.setGame(this);
+        this._controls.setGame(this);
+
+        // Settings
+        this._settings = config.settings || {};
+        this._sharedTurnControllerIndex = 0;
+
+        this._init();
+    }
+
+    /**
+     * Check if game is in API mode
+     * @returns {boolean}
+     */
+    get useApi() {
+        return this._useApi;
+    }
+
+    /**
+     * Get current player ID
+     * @returns {number}
+     */
+    get currentPlayer() {
+        return this._currentPlayer;
+    }
+
+    /**
+     * Get number of players
+     * @returns {number}
+     */
+    get numPlayers() {
+        return this._numPlayers;
+    }
+
+    /**
+     * Check if game is over
+     * @returns {boolean}
+     */
+    get isGameOver() {
+        return this._gameOver;
+    }
+
+    /**
+     * Initialize game state
+     * @private
+     */
+    _init() {
+        // Initialize players
+        this._players = [];
+        for (let i = 0; i < this._numPlayers; i++) {
+            const playerConfig = this._config.players ? this._config.players[i] : null;
+            const name = playerConfig ? (playerConfig.name || `Joueur ${i + 1}`) : `Joueur ${i + 1}`;
+            console.log(`Init player ${i}: name="${name}"`, playerConfig);
+
+            this._players.push({
+                id: i,
+                name: name,
+                color: playerConfig ? playerConfig.color : null, // Color handling might need display logic
+                remainingPieces: new Set(getAllPieceTypes()),
+                hasPassed: false,
+                lastPieceWasMonomino: false
+            });
+        }
+
+        this._currentPlayer = this._config.startPlayer || 0;
+        this._moveHistory = [];
+        this._gameOver = false;
+
+        this._updateUI();
+
+        // Apply settings
+        if (this._settings.colorblindMode) {
+            this._board.setColorblindMode(true);
+        }
+    }
+
+    /**
+     * Reset the game
+     * @returns {Promise<void>|void}
+     */
+    reset() {
+        this._board.reset();
+        this._controls.clearSelection();
+
+        if (this._useApi) {
+            return this._apiClient.resetGame().then(state => {
+                this._syncFromServerState(state);
+            }).catch(err => {
+                console.error('API reset failed:', err);
+                this._init(); // Fallback to local
+            });
+        } else {
+            this._init();
+        }
+    }
+
+    /**
+     * Initialize game from API (for API mode startup)
+     * @returns {Promise<void>}
+     */
+    async initFromApi() {
+        if (!this._useApi) return;
+
+        try {
+            const state = await this._apiClient.createGame(this._numPlayers);
+            this._syncFromServerState(state);
+        } catch (err) {
+            console.error('API init failed:', err);
+            this._useApi = false; // Fallback to local mode
+            this._init();
+        }
+    }
+
+    /**
+     * Check if this is a player's first move
+     * @param {number} playerId
+     * @returns {boolean}
+     */
+    isFirstMove(playerId) {
+        return !this._moveHistory.some(m => m.playerId === playerId);
+    }
+
+    /**
+     * Play a move
+     * @param {Object} piece
+     * @param {number} row
+     * @param {number} col
+     * @returns {boolean|Promise<boolean>}
+     */
+    playMove(piece, row, col) {
+        const playerId = this._currentPlayer;
+        const isFirst = this.isFirstMove(playerId);
+
+        // Validate locally first (fast feedback)
+        if (!this._board.isValidPlacement(piece, row, col, playerId, isFirst)) {
+            return false;
+        }
+
+        if (this._useApi) {
+            // API mode: Send move to server
+            return this._apiClient.playMove(
+                playerId,
+                piece.type,
+                piece.orientationIndex,
+                row,
+                col
+            ).then(response => {
+                if (response.success) {
+                    this._syncFromServerState(response.game_state);
+                    this._controls.clearSelection();
+                    return true;
+                } else {
+                    console.warn('API rejected move:', response.message);
+                    return false;
+                }
+            }).catch(err => {
+                console.error('API move failed:', err);
+                return false;
+            });
+        }
+
+        // Local mode: Apply move directly
+        this._board.placePiece(piece, row, col, playerId);
+
+        // Update player state
+        const player = this._players[playerId];
+        player.remainingPieces.delete(piece.type);
+        player.lastPieceWasMonomino = (piece.type === PieceType.I1);
+
+        // Record move
+        this._moveHistory.push({
+            playerId,
+            pieceType: piece.type,
+            orientation: piece.orientationIndex,
+            row,
+            col
+        });
+
+        // Clear selection
+        this._controls.clearSelection();
+
+        // Next turn
+        this._nextTurn();
+
+        // 3-Player Logic
+        if (this._players[playerId].type === 'SHARED') {
+            this._sharedTurnControllerIndex++;
+            this._updateUI();
+        }
+
+        return true;
+    }
+
+    /**
+     * Pass turn (when no valid moves)
+     * @returns {boolean|Promise<boolean>}
+     */
+    passTurn() {
+        if (this._useApi) {
+            return this._apiClient.passTurn().then(state => {
+                this._syncFromServerState(state);
+                this._controls.clearSelection();
+                return true;
+            }).catch(err => {
+                console.error('API pass failed:', err);
+                return false;
+            });
+        }
+
+        const player = this._players[this._currentPlayer];
+
+        // Check if player actually has no valid moves
+        const hasMove = this._hasValidMove(this._currentPlayer);
+        if (hasMove) {
+            // Must play if possible
+            alert('Vous devez jouer si vous avez un coup valide !');
+            return false;
+        }
+
+        player.hasPassed = true;
+        this._controls.clearSelection();
+        this._nextTurn();
+
+        // 3-Player Logic
+        if (player.type === 'SHARED') {
+            this._sharedTurnControllerIndex++;
+            this._updateUI();
+        }
+        return true;
+    }
+
+    /**
+     * Force pass (for debugging)
+     */
+    forcePass() {
+        this._players[this._currentPlayer].hasPassed = true;
+        this._controls.clearSelection();
+        this._nextTurn();
+    }
+
+    /**
+     * Synchronize local state from server response (API mode)
+     * @param {Object} serverState - State object from API
+     * @private
+     */
+    _syncFromServerState(serverState) {
+        // Update board grid
+        this._board.setGridFromArray(serverState.board);
+
+        // Update players
+        const serverPlayers = serverState.players;
+
+        if (this._players.length !== serverPlayers.length) {
+            // If mismatch (shouldn't happen on normal start), re-init but try to keep names if possible?
+            // Or just logging warning.
+            console.warn(`Sync: Player count mismatch. Local: ${this._players.length}, Server: ${serverPlayers.length}`);
+            this._numPlayers = serverPlayers.length;
+            this._players = serverPlayers.map(p => ({
+                id: p.id,
+                name: `Joueur ${p.id + 1}`, // Fallback
+                remainingPieces: new Set(p.pieces_remaining),
+                hasPassed: p.has_passed,
+                lastPieceWasMonomino: false
+            }));
+        } else {
+            // Merge server state into existing player objects to preserve names/colors
+            serverPlayers.forEach((p, index) => {
+                // Assuming server array order matches ID order 0..3
+                const localPlayer = this._players[index];
+                if (localPlayer) {
+                    localPlayer.remainingPieces = new Set(p.pieces_remaining);
+                    localPlayer.hasPassed = p.has_passed;
+                    // Reset transient state that server doesn't track strictly or logic differs
+                    localPlayer.lastPieceWasMonomino = false;
+                }
+            });
+        }
+
+        // Update current player
+        this._currentPlayer = serverState.current_player_id;
+
+        // Update game status
+        this._gameOver = serverState.status === 'finished';
+
+        // Calculate scores from API data and update UI
+        this._updateUI();
+
+        // Show game over if finished
+        if (this._gameOver) {
+            this._showGameOver();
+        }
+    }
+
+    /**
+     * Check if player has any valid move
+     * @param {number} playerId
+     * @returns {boolean}
+     * @private
+     */
+    _hasValidMove(playerId) {
+        const player = this._players[playerId];
+        const isFirst = this.isFirstMove(playerId);
+
+        for (const type of player.remainingPieces) {
+            for (const piece of PIECES[type]) {
+                // Try positions around corners
+                const corners = this._board.getPlayerCorners(playerId);
+                for (const [cr, cc] of corners) {
+                    for (const [pr, pc] of piece.coords) {
+                        const row = cr - pr;
+                        const col = cc - pc;
+                        if (this._board.isValidPlacement(piece, row, col, playerId, isFirst)) {
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Advance to next turn
+     * @private
+     */
+    _nextTurn() {
+        // Check if game over
+        if (this._checkGameOver()) {
+            this._gameOver = true;
+            this._showGameOver();
+            return;
+        }
+
+        // Find next player who can play
+        let attempts = 0;
+        while (attempts < this._numPlayers) {
+            this._currentPlayer = (this._currentPlayer + 1) % this._numPlayers;
+            const player = this._players[this._currentPlayer];
+
+            if (!player.hasPassed) {
+                if (player.remainingPieces.size === 0) {
+                    player.hasPassed = true;
+                } else if (!this._hasValidMove(this._currentPlayer)) {
+                    player.hasPassed = true;
+                } else {
+                    break; // This player can play
+                }
+            }
+
+            attempts++;
+        }
+
+        if (attempts >= this._numPlayers) {
+            this._gameOver = true;
+            this._showGameOver();
+        }
+
+        this._updateUI();
+    }
+
+    /**
+     * Check if game is over
+     * @returns {boolean}
+     * @private
+     */
+    _checkGameOver() {
+        return this._players.every(p => p.hasPassed);
+    }
+
+    /**
+     * Calculate scores
+     * @returns {number[]}
+     */
+    getScores() {
+        return this._players.map(player => {
+            let remaining = 0;
+            for (const type of player.remainingPieces) {
+                remaining += getPiece(type).size;
+            }
+
+            let score = -remaining;
+
+            if (player.remainingPieces.size === 0) {
+                score += 15; // All pieces placed bonus
+                if (player.lastPieceWasMonomino) {
+                    score += 5; // Monomino last bonus
+                }
+            }
+
+            return score;
+        });
+    }
+
+    /**
+     * Get player remaining pieces
+     * @param {number} playerId
+     * @returns {Set<string>}
+     */
+    getPlayerPieces(playerId) {
+        return new Set(this._players[playerId].remainingPieces);
+    }
+
+    /**
+     * Update all UI elements
+     * @private
+     */
+    _updateUI() {
+        // Update turn indicator
+        const currentPlayer = this._players[this._currentPlayer];
+        let displayName = currentPlayer.name;
+
+        // 3-Player Logic: Show controller name
+        if (currentPlayer.type === 'SHARED') {
+            const controllerId = this._sharedTurnControllerIndex % 3;
+            // Ensure controllerId is valid
+            const controller = this._players[controllerId];
+            if (controller) {
+                displayName = `${currentPlayer.name} (Joué par ${controller.name})`;
+            }
+        }
+
+        const playerBadge = document.getElementById('current-player');
+        playerBadge.textContent = displayName;
+        playerBadge.className = `player-badge player-${this._currentPlayer}`;
+
+        // Update scores
+        const scores = this.getScores();
+        for (let i = 0; i < this._numPlayers; i++) {
+            const scoreEl = document.getElementById(`score-${i}`);
+            const nameEl = document.getElementById(`name-${i}`);
+
+            if (scoreEl) scoreEl.textContent = scores[i];
+            if (nameEl) {
+                nameEl.textContent = this._players[i].name;
+            }
+
+            // Highlight active player
+            const scoreItem = scoreEl?.closest('.score-item');
+            if (scoreItem) {
+                // Show/Hide score items based on playercount
+                scoreItem.style.display = 'flex';
+                scoreItem.classList.toggle('active', i === this._currentPlayer);
+            }
+        }
+
+        // Hide unused score items
+        for (let i = this._numPlayers; i < 4; i++) {
+            const scoreEl = document.getElementById(`score-${i}`);
+            const scoreItem = scoreEl?.closest('.score-item');
+            if (scoreItem) scoreItem.style.display = 'none';
+        }
+
+        // Update pieces panel
+        const player = this._players[this._currentPlayer];
+        this._controls.renderPieces(this._currentPlayer, player.remainingPieces);
+
+        // Re-render board
+        this._board.render();
+    }
+
+    /**
+     * Show game over modal
+     * @private
+     */
+    _showGameOver() {
+        const modal = document.getElementById('game-over-modal');
+        const scoresDiv = document.getElementById('final-scores');
+
+        const scores = this.getScores();
+        const rankings = [...scores.keys()].sort((a, b) => scores[b] - scores[a]);
+
+        scoresDiv.innerHTML = rankings.map((i, rank) => `
+            <div class="final-score-item">
+                <span>${rank + 1}. ${this._players[i].name}</span>
+                <span>${scores[i]} points</span>
+            </div>
+        `).join('');
+
+        modal.classList.remove('hidden');
+    }
+}
