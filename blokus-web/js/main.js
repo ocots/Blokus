@@ -75,14 +75,14 @@ async function initApp() {
         }
 
         // Test game over button (for testing)
-        if (e.target.id === 'btn-test-gameover' || e.target.closest('#btn-test-gameover')) {
+        /* if (e.target.id === 'btn-test-gameover' || e.target.closest('#btn-test-gameover')) {
             if (game && !game.isGameOver) {
                 // Force all players to pass
                 game._players.forEach(p => p.hasPassed = true);
                 game._gameOver = true;
                 game._showGameOver();
             }
-        }
+        } */
     });
 
     // Check for saved game
