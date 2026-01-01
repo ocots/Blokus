@@ -42,12 +42,12 @@ class TestPlayerState:
     
     def test_player_squares_remaining(self):
         """Player starts with 89 squares."""
-        player = Player(id=0)
+        player = Player(id=0, name="Test", color="#3b82f6")
         assert player.squares_remaining == 89
     
     def test_player_pieces_count(self):
         """Player starts with 21 pieces."""
-        player = Player(id=0)
+        player = Player(id=0, name="Test", color="#3b82f6")
         assert player.pieces_count == 21
 
 
@@ -256,7 +256,15 @@ class TestGameOver:
         game.force_pass()
         
         assert game.status == GameStatus.FINISHED
-        assert game.get_winner() is not None
+        assert game.get_winner() is None # Tie initially
+
+    def test_get_winner_clear_winner(self):
+        """Should return the player with the highest score."""
+        game = Game(num_players=2)
+        game.players[0].remaining_pieces.clear() # Player 0 score = 15
+        
+        assert game.get_winner() == 0
+
 
     def test_scoring_bonus_edge_case(self):
         """Bonus of +20 if monomino is the last piece placed."""
@@ -270,4 +278,106 @@ class TestGameOver:
         
         scores = game.get_scores()
         assert scores[0] == 20 # 15 (all) + 5 (extra bonus for I1) = 20
+
+
+class TestStartingPlayer:
+    """Test starting player configuration."""
+
+    def test_start_with_default_player_zero(self):
+        """Default game starts with player 0."""
+        game = Game()
+        assert game.current_player_idx == 0
+
+    def test_start_with_specified_player(self):
+        """Game can start with specified player."""
+        # Test starting with player 1 (should be green)
+        game = Game(starting_player_idx=1)
+        assert game.current_player_idx == 1
+        
+        # Test starting with player 2 (should be yellow)  
+        game = Game(starting_player_idx=2)
+        assert game.current_player_idx == 2
+        
+        # Test starting with player 3 (should be red)
+        game = Game(starting_player_idx=3)
+        assert game.current_player_idx == 3
+
+    def test_start_with_invalid_player_raises_error(self):
+        """Starting with invalid player ID should raise error."""
+        # Test negative player ID
+        with pytest.raises(ValueError, match="starting_player_idx must be between 0 and 3"):
+            Game(starting_player_idx=-1)
+            
+        # Test player ID too high for 4-player game
+        with pytest.raises(ValueError, match="starting_player_idx must be between 0 and 3"):
+            Game(starting_player_idx=4)
+            
+        # Test player ID too high for 2-player game
+        with pytest.raises(ValueError, match="starting_player_idx must be between 0 and 1"):
+            Game(num_players=2, starting_player_idx=2)
+
+    def test_starting_player_with_different_player_counts(self):
+        """Starting player should work with different player counts."""
+        # 2-player game
+        game = Game(num_players=2, starting_player_idx=1)
+        assert game.current_player_idx == 1
+        assert len(game.players) == 2
+        
+        # 3-player game  
+        game = Game(num_players=3, starting_player_idx=2)
+        assert game.current_player_idx == 2
+        assert len(game.players) == 3
+        
+        # 4-player game
+        game = Game(num_players=4, starting_player_idx=3)
+        assert game.current_player_idx == 3
+        assert len(game.players) == 4
+
+    def test_first_move_respects_starting_player(self):
+        """First move should be from the specified starting player."""
+        # Start with player 2
+        game = Game(starting_player_idx=2)
+        
+        # Only player 2 should be able to move
+        valid_moves = game.get_valid_moves()
+        assert len(valid_moves) > 0
+        
+        for move in valid_moves:
+            assert move.player_id == 2
+            
+        # Player 0 should not be able to move
+        invalid_move = Move(
+            player_id=0,
+            piece_type=PieceType.I1,
+            orientation=0,
+            row=0,
+            col=0
+        )
+        assert not game.is_valid_move(invalid_move)
+
+    def test_turn_order_after_starting_player(self):
+        """Turn order should advance correctly from starting player."""
+        # Start with player 1
+        game = Game(starting_player_idx=1)
+        
+        # Player 1 makes first move
+        move = Move(
+            player_id=1,
+            piece_type=PieceType.I1,
+            orientation=0,
+            row=0,
+            col=19  # Top-right corner for player 1
+        )
+        game.play_move(move)
+        
+        # Next should be player 2
+        assert game.current_player_idx == 2
+        
+        # Player 2 passes, should go to player 3
+        game.pass_turn()
+        assert game.current_player_idx == 3
+        
+        # Player 3 passes, should go to player 0
+        game.pass_turn()
+        assert game.current_player_idx == 0
 
