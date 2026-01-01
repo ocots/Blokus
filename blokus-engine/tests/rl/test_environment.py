@@ -144,7 +144,7 @@ class TestEnvironmentIntegration:
             from blokus.rl import BlokusEnv
             if BlokusEnv is None:
                 pytest.skip("gymnasium not installed")
-            return BlokusEnv(num_players=2, board_size=14)
+            return BlokusEnv(num_players=2, board_size=14, render_mode="ansi")
         except ImportError:
             pytest.skip("gymnasium not installed")
     
@@ -200,3 +200,28 @@ class TestEnvironmentIntegration:
         
         # Game should have progressed
         assert steps > 0
+
+    def test_render_modes(self, env):
+        """Should support ansi and human render modes."""
+        env.reset()
+        ansi_render = env.render()
+        assert isinstance(ansi_render, str)
+        assert len(ansi_render) > 0
+        
+        # Human mode should not crash (usually prints)
+        env.render_mode = "human"
+        env.render()
+
+    def test_close_env(self, env):
+        """Close should not raise error and should be idempotent."""
+        env.close()
+        env.close()
+
+    def test_step_before_reset_raises(self, env):
+        """Stepping before reset should raise an error as per Gym API."""
+        # Clean env (new instance)
+        from blokus.rl.environment import BlokusEnv
+        raw_env = BlokusEnv(num_players=2, board_size=14)
+        with pytest.raises(RuntimeError, match="not initialized"):
+             raw_env.step(0)
+

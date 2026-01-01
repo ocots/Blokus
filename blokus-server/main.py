@@ -13,8 +13,9 @@ from blokus.game import Game, Move
 from blokus.pieces import PieceType
 
 from api.models import (
-    GameState, PlayerState, MoveRequest, MoveResponse, CreateGameRequest
+    GameState, PlayerState, MoveRequest, MoveResponse, CreateGameRequest, AIModelInfo
 )
+from blokus.rl.registry import get_registry
 
 app = FastAPI(title="Blokus API", description="API for Blokus Game Engine")
 
@@ -60,6 +61,12 @@ def map_game_to_state(game: Game) -> GameState:
 @app.get("/")
 def read_root():
     return {"message": "Welcome to Blokus API"}
+
+@app.get("/ai/models", response_model=list[AIModelInfo])
+def list_ai_models():
+    """List all available AI models/personas."""
+    registry = get_registry()
+    return registry.list_for_api(only_enabled=True)
 
 @app.post("/game/new", response_model=GameState)
 def create_game(request: CreateGameRequest):

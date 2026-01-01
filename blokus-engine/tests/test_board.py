@@ -38,6 +38,16 @@ class TestBoardBasics:
         assert not board.is_empty(5, 5)
         assert not board.is_empty(-1, 0)  # Out of bounds
 
+    def test_to_string(self):
+        """Test board string representation."""
+        board = Board(size=5)
+        board.grid[0, 0] = 1
+        board.grid[1, 1] = 2
+        s = board.to_string()
+        assert "1" in s or "P1" in s # Depending on implementation
+        assert "2" in s or "P2" in s
+        assert "." in s or " " in s or "0" in s
+
 
 class TestStartingCorners:
     """Test starting corner positions."""

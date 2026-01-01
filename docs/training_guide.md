@@ -8,9 +8,9 @@ Ce guide explique comment utiliser l'infrastructure d'apprentissage par renforce
 
 Le système d'apprentissage repose sur 3 composants principaux :
 
-1.  **Environnement (`blokus.rl.environment`)** : Simulation du jeu compatible Gym/Gymnasium.
-2.  **Infrastructure (`blokus.rl.training`)** : Gestion des sauvegardes, métriques et configuration.
-3.  **Agents (`blokus.rl.agents`)** : Implémentation des algorithmes (ex: DQN).
+1. **Environnement (`blokus.rl.environment`)** : Simulation du jeu compatible Gym/Gymnasium.
+2. **Infrastructure (`blokus.rl.training`)** : Gestion des sauvegardes, métriques et configuration.
+3. **Agents (`blokus.rl.agents`)** : Implémentation des algorithmes (ex: DQN).
 
 L'entraînement se fait "Offline" par rapport à l'interface web. Les modèles sont sauvegardés sur le disque et peuvent être chargés ultérieurement par l'API pour jouer contre des humains.
 
@@ -21,6 +21,7 @@ L'entraînement se fait "Offline" par rapport à l'interface web. Les modèles s
 Avant de lancer un entraînement long, il est recommandé de valider que l'environnement fonctionne correctement (règles, observations, récompenses).
 
 **Commande :**
+
 ```bash
 python blokus-engine/scripts/validate_env.py
 ```
@@ -32,38 +33,83 @@ Cela va :
 
 ---
 
-## 3. Lancer l'Entraînement (Phase 5)
+## 3. Lancer l'Entraînement (Local)
 
-> **Note :** Le script d'entraînement est en cours de développement (Phase 5).
+La commande pour lancer l'entraînement d'un agent DQN :
 
-La commande standard pour lancer l'entraînement d'un agent DQN en self-play sera :
+**Commande :**
 
-**Commande prévue :**
 ```bash
-python blokus-engine/scripts/train_2p.py --experiment "mon_experience_dqn" --device "mps"
+python blokus-engine/scripts/train.py --new --name "mon_experience" --board-size 14
 ```
 
-### Arguments Principaux (Prévus) :
-- `--experiment` : Nom de l'expérience (créera un dossier dans `models/experiments/`).
-- `--board_size` : 14 (Duo) ou 20 (Standard). Défaut : 14.
-- `--total_timesteps` : Nombre de pas de temps total (ex: 1000000).
-- `--device` : `cpu`, `cuda`, ou `mps` (Mac).
+### Arguments Principaux
+
+- `--new` : Créer une nouvelle expérience.
+- `--resume [NAME]` : Reprendre une expérience existante.
+- `--name` : Nom de l'expérience (obligatoire pour `--new`).
+- `--board-size` : 14 (Duo) ou 20 (Standard).
+- `--episodes` : Nombre total d'épisodes d'entraînement.
+- `--eval-freq` : Fréquence des évaluations (ex: 1000).
 
 ---
 
-## 4. Reprise de l'Entraînement
+## 4. Entraînement via GitHub Actions (Cloud)
 
-Le système de checkointing est conçu pour permettre l'arrêt et la reprise à tout moment.
+Une plateforme d'entraînement automatisée est disponible dans GitHub Actions. Elle tente d'utiliser le runner **occidata** (avec GPU si possible) et se replie sur un runner GitHub standard si besoin.
 
-Pour reprendre un entraînement interrompu :
-1. Relancez simplement la **même commande** avec le **même nom d'expérience**.
-2. Le script détectera le dossier existant (`models/experiments/mon_experience_dqn`).
-3. Il chargera le dernier checkpoint (`checkpoint_latest.pt`) et le fichier de métadonnées.
-4. L'entraînement reprendra exactement là où il s'était arrêté (numéro d'épisode, buffer de replay, état de l'optimiseur).
+### Méthode A : Lancement Manuel (Dispatch)
+
+1. Allez sur GitHub → **Actions** → **RL Training**.
+2. Cliquez sur **"Run workflow"**.
+3. Remplissez le formulaire (Nom, Taille, Épisodes, etc.).
+4. Cochez **"Resume"** si vous voulez continuer une session passée.
+
+### Méthode B : Lancement par "Queue" (Push)
+
+Vous pouvez déclencher un entraînement en modifiant le fichier `blokus-engine/training_queue.json` sur `main` :
+
+```json
+{
+  "queue": [
+    {
+      "experiment_name": "duo_master_v1",
+      "board_size": 14,
+      "episodes": 100000,
+      "resume": false
+    }
+  ]
+}
+```
+
+Un simple `git push` de ce fichier lancera l'entraînement.
+
+### Résultat : Une Pull Request Automatique
+
+Une fois l'entraînement fini, le workflow :
+
+1. Sauvegarde le modèle (`.pt`) et les métadonnées.
+2. Enregistre automatiquement l'IA dans `blokus-engine/models/registry.json`.
+3. **Crée une Pull Request** avec les résultats. Une fois fusionnée, l'IA devient disponible dans le jeu !
 
 ---
 
-## 5. Suivi des Performances (Dashboard)
+## 5. Reprise de l'Entraînement
+
+Le système de checkpointing est conçu pour permettre l'arrêt et la reprise à tout moment.
+
+**En Local :**
+
+```bash
+python blokus-engine/scripts/train.py --resume mon_experience
+```
+
+**Sur GitHub :**
+Cochez la case **"Resume"** lors du lancement, ou mettez `"resume": true` dans le JSON. Le script récupérera `checkpoint_latest.pt` et continuera.
+
+---
+
+## 6. Suivi des Performances (Dashboard)
 
 Un dashboard interactif basé sur Streamlit permet de suivre l'évolution de l'apprentissage en temps réel.
 

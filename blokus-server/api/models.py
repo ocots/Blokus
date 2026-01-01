@@ -64,3 +64,14 @@ class CreateGameRequest(BaseModel):
     num_players: int = 4
     players: Optional[List[PlayerConfig]] = None
 
+
+class AIModelInfo(BaseModel):
+    """Information about an available AI model."""
+    id: str
+    name: str
+    description: str
+    level: str
+    style: str
+    tags: List[str]
+    enabled: bool
+    tooltip: str

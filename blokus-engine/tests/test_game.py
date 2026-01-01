@@ -241,3 +241,33 @@ class TestGameCopy:
         
         # Original unchanged
         assert game.board.grid[0, 0] == 1
+
+
+class TestGameOver:
+    """Test game over conditions and results."""
+
+    def test_force_pass_game_over(self):
+        """Game should end when everyone passes."""
+        game = Game(num_players=2)
+        assert game.status == GameStatus.IN_PROGRESS
+        
+        # Everyone passes
+        game.force_pass()
+        game.force_pass()
+        
+        assert game.status == GameStatus.FINISHED
+        assert game.get_winner() is not None
+
+    def test_scoring_bonus_edge_case(self):
+        """Bonus of +20 if monomino is the last piece placed."""
+        game = Game(num_players=2)
+        player = game.players[0]
+        
+        # Simulate all pieces placed, monomino last
+        player.remaining_pieces.clear()
+        # In current implementation, it checks last_piece_was_monomino.
+        player.last_piece_was_monomino = True
+        
+        scores = game.get_scores()
+        assert scores[0] == 20 # 15 (all) + 5 (extra bonus for I1) = 20
+

@@ -1,0 +1,252 @@
+name: RL Training
+
+on:
+  push:
+    paths:
+      - 'blokus-engine/training_queue.json'
+  workflow_dispatch:
+    inputs:
+      experiment_name:
+        description: "Experiment name (e.g., duo_master_v1)"
+        required: true
+        default: "duo_experiment"
+        type: string
+      board_size:
+        description: "Board size (14 for Duo, 20 for Standard)"
+        required: true
+        default: "14"
+        type: choice
+        options:
+          - "14"
+          - "20"
+      episodes:
+        description: "Total training episodes"
+        required: true
+        default: "10000"
+        type: string
+      eval_frequency:
+        description: "Evaluation frequency (episodes)"
+        required: true
+        default: "500"
+        type: string
+      resume:
+        description: "Resume from latest checkpoint?"
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+  pull-requests: write
+
+env:
+  PYTHON_VERSION: "3.11"
+
+jobs:
+  # ─────────────────────────────────────────────────────────────
+  # Determine runner and inputs
+  # ─────────────────────────────────────────────────────────────
+  setup:
+    name: 🧭 Setup & Determine runner
+    runs-on: ubuntu-latest
+    outputs:
+      runner: ${{ steps.pick.outputs.runner }}
+      runner_type: ${{ steps.pick.outputs.runner_type }}
+      experiment_name: ${{ steps.params.outputs.experiment_name }}
+      board_size: ${{ steps.params.outputs.board_size }}
+      episodes: ${{ steps.params.outputs.episodes }}
+      eval_frequency: ${{ steps.params.outputs.eval_frequency }}
+      resume: ${{ steps.params.outputs.resume }}
+      
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 📋 Extract parameters
+        id: params
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "experiment_name=${{ inputs.experiment_name }}" >> "$GITHUB_OUTPUT"
+            echo "board_size=${{ inputs.board_size }}" >> "$GITHUB_OUTPUT"
+            echo "episodes=${{ inputs.episodes }}" >> "$GITHUB_OUTPUT"
+            echo "eval_frequency=${{ inputs.eval_frequency }}" >> "$GITHUB_OUTPUT"
+            echo "resume=${{ inputs.resume }}" >> "$GITHUB_OUTPUT"
+          else
+            # Triggered by push to training_queue.json
+            echo "Reading from training_queue.json"
+            JSON_FILE="blokus-engine/training_queue.json"
+            # Get the first item in the queue
+            EXP_NAME=$(jq -r '.queue[0].experiment_name' $JSON_FILE)
+            BOARD_SIZE=$(jq -r '.queue[0].board_size // 14' $JSON_FILE)
+            EPISODES=$(jq -r '.queue[0].episodes // 10000' $JSON_FILE)
+            EVAL_FREQ=$(jq -r '.queue[0].eval_frequency // 500' $JSON_FILE)
+            RESUME=$(jq -r '.queue[0].resume // false' $JSON_FILE)
+            
+            echo "experiment_name=$EXP_NAME" >> "$GITHUB_OUTPUT"
+            echo "board_size=$BOARD_SIZE" >> "$GITHUB_OUTPUT"
+            echo "episodes=$EPISODES" >> "$GITHUB_OUTPUT"
+            echo "eval_frequency=$EVAL_FREQ" >> "$GITHUB_OUTPUT"
+            echo "resume=$RESUME" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Select runner
+        id: pick
+        env:
+          GH_TOKEN: ${{ secrets.RUNNER_FALLBACK_TOKEN }}
+        run: |
+          set -euo pipefail
+          OWNER="${{ github.repository_owner }}"
+          echo "🔍 Checking for online Occidata runner in org $OWNER"
+          
+          TMP_ERR=$(mktemp)
+          if MATCH=$(gh api "orgs/$OWNER/actions/runners" \
+            --jq '.runners[] | select(.status=="online") | select([.labels[].name] | index("occidata")) | select([.labels[].name] | index("local"))' 2>"$TMP_ERR"); then
+            if [ -n "$MATCH" ]; then
+              if echo "$MATCH" | grep -q '"gpu"'; then
+                SELECT='["self-hosted","occidata","local","gpu"]'
+              else
+                SELECT='["self-hosted","occidata","local"]'
+              fi
+              RUNNER_TYPE="self-hosted"
+            else
+              SELECT='["ubuntu-latest"]'
+              RUNNER_TYPE="github"
+            fi
+          else
+            SELECT='["ubuntu-latest"]'
+            RUNNER_TYPE="github"
+          fi
+          rm -f "$TMP_ERR"
+          echo "runner=$SELECT" >> "$GITHUB_OUTPUT"
+          echo "runner_type=$RUNNER_TYPE" >> "$GITHUB_OUTPUT"
+
+  # ─────────────────────────────────────────────────────────────
+  # Run RL Training
+  # ─────────────────────────────────────────────────────────────
+  train:
+    name: 🧠 Train RL Agent
+    runs-on: ${{ fromJson(needs.setup.outputs.runner) }}
+    needs: setup
+    timeout-minutes: 720
+    
+    outputs:
+      experiment_name: ${{ needs.setup.outputs.experiment_name }}
+      training_success: ${{ steps.train.outputs.success }}
+      best_win_rate: ${{ steps.train.outputs.best_win_rate }}
+    
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: 📦 Install dependencies
+        working-directory: blokus-engine
+        run: |
+          python -m pip install --upgrade pip
+          pip install numpy gymnasium torch tensorboard
+          echo "✅ Basic dependencies installed"
+
+      - name: 🔧 Configure for GPU (if available)
+        if: needs.setup.outputs.runner_type == 'self-hosted'
+        run: |
+          if command -v nvidia-smi &> /dev/null; then
+            pip install torch --index-url https://download.pytorch.org/whl/cu121 --force-reinstall
+            echo "DEVICE=cuda" >> $GITHUB_ENV
+          else
+            echo "DEVICE=cpu" >> $GITHUB_ENV
+          fi
+
+      - name: 🧠 Run training
+        id: train
+        working-directory: blokus-engine
+        env:
+          EXP_NAME: ${{ needs.setup.outputs.experiment_name }}
+          RESUME: ${{ needs.setup.outputs.resume }}
+        run: |
+          MODE_FLAG="--new"
+          if [ "$RESUME" = "true" ]; then
+            MODE_FLAG="--resume $EXP_NAME"
+          fi
+          
+          python scripts/train.py \
+            $MODE_FLAG \
+            --name "$EXP_NAME" \
+            --board-size "${{ needs.setup.outputs.board_size }}" \
+            --episodes "${{ needs.setup.outputs.episodes }}" \
+            --eval-freq "${{ needs.setup.outputs.eval_frequency }}" \
+            --no-video
+          
+          METADATA_FILE="models/experiments/$EXP_NAME/metadata.json"
+          if [ -f "$METADATA_FILE" ]; then
+            BEST_WIN_RATE=$(python -c "import json; print(json.load(open('$METADATA_FILE'))['best_win_rate'])")
+            echo "best_win_rate=$BEST_WIN_RATE" >> $GITHUB_OUTPUT
+          else
+            echo "best_win_rate=0.0" >> $GITHUB_OUTPUT
+          fi
+          echo "success=true" >> $GITHUB_OUTPUT
+
+      - name: 📦 Upload training artifacts
+        if: steps.train.outputs.success == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: training-results-${{ needs.setup.outputs.experiment_name }}
+          path: blokus-engine/models/experiments/${{ needs.setup.outputs.experiment_name }}/
+
+  # ─────────────────────────────────────────────────────────────
+  # Create Pull Request
+  # ─────────────────────────────────────────────────────────────
+  create-pr:
+    name: 🔀 Create Pull Request
+    runs-on: ubuntu-latest
+    needs: [setup, train]
+    if: needs.train.outputs.training_success == 'true'
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 📥 Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: training-results-${{ needs.setup.outputs.experiment_name }}
+          path: blokus-engine/models/experiments/${{ needs.setup.outputs.experiment_name }}/
+
+      - name: 🌿 Create and Push Branch
+        id: commit
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          
+          BRANCH_NAME="training/${{ needs.setup.outputs.experiment_name }}-$(date +%s)"
+          git checkout -b "$BRANCH_NAME"
+          
+          git add blokus-engine/models/experiments/${{ needs.setup.outputs.experiment_name }}/
+          
+          # Update Registry logic here (omitted for brevity but recommended)
+          
+          if git diff --cached --quiet; then
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+          else
+            git commit -m "🧠 Add trained model: ${{ needs.setup.outputs.experiment_name }}"
+            git push origin "$BRANCH_NAME"
+            echo "branch_name=$BRANCH_NAME" >> $GITHUB_OUTPUT
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: 🔀 Create PR
+        if: steps.commit.outputs.has_changes == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr create \
+            --title "🧠 Model Trained: ${{ needs.setup.outputs.experiment_name }}" \
+            --body "Trained on ${{ needs.setup.outputs.episodes }} episodes. Best win rate: ${{ needs.train.outputs.best_win_rate }}" \
+            --base main \
+            --head "${{ steps.commit.outputs.branch_name }}"

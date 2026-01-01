@@ -232,6 +232,15 @@ class Game:
         
         return scores
     
+    def get_winner(self) -> Optional[int]:
+        """Get the ID of the winning player (or None if tie)."""
+        scores = self.get_scores()
+        max_score = max(scores)
+        winners = [i for i, s in enumerate(scores) if s == max_score]
+        if len(winners) == 1:
+            return winners[0]
+        return None  # Tie or multiple winners
+    
     def get_rankings(self) -> List[int]:
         """Get player rankings (0 = first place)."""
         scores = self.get_scores()
