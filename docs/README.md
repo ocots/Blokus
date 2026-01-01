@@ -49,6 +49,15 @@
 | [Modeling Analysis](modeling_analysis.md) | RL modeling approaches |
 | [UI Design](ui_design.md) | Interface specifications |
 
+### 📊 Reports & Plans
+
+| Document | Description |
+|----------|-------------|
+| [Reports Index](reports/README.md) | Session reports and action plans |
+| [Latest Session](reports/2026-01-01_session_summary.md) | 2026-01-01 comprehensive summary |
+| [Action Plan](reports/action_plan.md) | Player/GameManager implementation plan |
+| [Architecture Proposal](reports/player_architecture_proposal.md) | Original architecture proposal |
+
 ---
 
 ## 🗂️ Project Structure
@@ -59,6 +68,7 @@ Blokus/
 │   ├── architecture/          # System architecture docs
 │   ├── guides/                # How-to guides
 │   ├── tutorials/             # Step-by-step tutorials
+│   ├── reports/               # Session reports & plans
 │   ├── CONTRIBUTING.md        # Contribution guide
 │   └── README.md              # This file
 │

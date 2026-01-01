@@ -115,13 +115,13 @@ Roadmap détaillé pour le développement du projet.
 
 | Étape | Description | Fichier | État |
 |-------|-------------|---------|------|
-| 5.1 | Infrastructure (Config, Checkpoints, Metrics) | `rl/training/` | ✅ |
+| 5.1 | Infrastructure (Config, Checkpoints, Metrics, Tests) | `rl/training/` | ✅ |
 | 5.2 | Dashboard de suivi (Streamlit) | `rl/visualization/dashboard.py` | ✅ |
-| 5.3 | Architecture réseau CNN (PyTorch) | `rl/networks.py` | 🚧 |
-| 5.4 | Agent DQN + Dueling + PER | `rl/agents/dqn.py` | 🚧 |
-| 5.5 | Script entraînement 2P self-play | `scripts/train_2p.py` | 🚧 |
+| 5.3 | Architecture réseau CNN (PyTorch) | `rl/networks.py` | ✅ |
+| 5.4 | Agent DQN + Dueling + PER | `rl/agents/dqn_agent.py` | ✅ |
+| 5.5 | Script entraînement 2P self-play | `scripts/train.py` | 🚧 |
 | 5.6 | Transfer learning → 4P | `scripts/train_4p.py` | 📅 |
-| 5.7 | Registre modèles par profil | `models/registry.json` | 📅 |
+| 5.7 | Registre modèles par profil | `blokus/rl/registry.py` | ✅ |
 
 **Curriculum Learning** :
 
@@ -170,5 +170,5 @@ Phase 2 ──┘
 | Phase 2 | 3-4 jours | ✅ TERMINÉ |
 | Phase 3-3.8 | 3 jours | ✅ TERMINÉ |
 | Phase 4 | 2 jours | ✅ TERMINÉ |
-| Phase 5 | Variable (entraînement) | 🚧 EN COURS |
+| Phase 5 | 5 jours (implémentation + tests) | ✅ TERMINÉ (Socle) |
 | Phase 6 | 1 jour | 🚧 À faire |

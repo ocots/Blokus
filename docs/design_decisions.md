@@ -8,10 +8,11 @@ Historique des choix techniques et leur justification.
 
 ### Langage de Programmation
 
-| Aspect | Choix | Alternatives considérées |
-|--------|-------|--------------------------|
-| **RL / Backend** | Python | Julia |
-| **Interface** | HTML/CSS/JavaScript | Electron, PyQt |
+| Aspect          | Choix               | Alternatives considérées |
+|-----------------|---------------------|--------------------------|
+| **RL / Backend**| Python              | Julia                    |
+| **Interface**   | HTML/CSS/JavaScript | Electron, PyQt           |
+
 
 **Justification** :
 
@@ -22,12 +23,13 @@ Historique des choix techniques et leur justification.
 
 ### Architecture RL
 
-| Aspect | Choix | Justification |
-|--------|-------|---------------|
-| **Représentation état** | Multi-canal 47 channels | Complétude, style AlphaZero prouvé |
-| **Espace d'actions** | Flat + Masquage (~6000) | Simplicité, efficacité |
-| **Récompenses** | Potential-Based Shaping | Optimalité + convergence rapide |
-| **Algorithme initial** | DQN + Dueling + PER | Validation rapide, baseline solide |
+| Aspect                | Choix                    | Justification                     |
+|-----------------------|--------------------------|-----------------------------------|
+| **Représentation état** | Multi-canal 47 channels  | Complétude, style AlphaZero prouvé|
+| **Espace d'actions**  | Flat + Masquage (~6000)  | Simplicité, efficacité            |
+| **Récompenses**       | Potential-Based Shaping  | Optimalité + convergence rapide   |
+| **Algorithme initial**| DQN + Dueling + PER      | Validation rapide, baseline solide|
+
 
 ---
 
@@ -43,11 +45,12 @@ Historique des choix techniques et leur justification.
 
 ### Gestion de l'État (State Management)
 
-| Décision | Description | Justification |
-|----------|-------------|---------------|
-| **API Stateless (Setup)** | Le backend ignore les noms/couleurs/personas. | Simplifie le modèle de données Python pour l'instant (focus sur RL). |
-| **Sync Hybride** | Le frontend fusionne l'état Serveur (plateau, scores) avec l'état Local (noms, config). | Permet une UI riche sans alourdir le backend prématurément. |
-| **SetupManager** | Classe dédiée pour le workflow d'initialisation. | Sépare clairement la configuration du cycle de vie du jeu (`Game`). |
+| Décision                  | Description                                                                              | Justification                                                 |
+|---------------------------|------------------------------------------------------------------------------------------|---------------------------------------------------------------|
+| **API Stateless (Setup)** | Le backend ignore les noms/couleurs/personas.                                            | Simplifie le modèle de données Python pour l'instant (focus sur RL). |
+| **Sync Hybride**          | Le frontend fusionne l'état Serveur (plateau, scores) avec l'état Local (noms, config).  | Permet une UI riche sans alourdir le backend prématurément.   |
+| **SetupManager**          | Classe dédiée pour le workflow d'initialisation.                                         | Sépare clairement la configuration du cycle de vie du jeu (`Game`). |
+
 
 ---
 
@@ -55,31 +58,27 @@ Historique des choix techniques et leur justification.
 
 ### Architecture Logicielle : Machines à États (FSM)
 
-| Domaine | Utilité | Verdict | Justification |
-|---------|---------|---------|---------------|
-| **UI / Menus** | Haute | ✅ **OUI** | Gère proprement les transitions (`Intro` → `Setup` → `Jeu` → `Fin`) et évite les bugs d'états incohérents. Indispensable pour le flux "Rejouer". |
-| **Logique Jeu** | Haute | ✅ **OUI** | Sécurise la boucle de jeu (`Attente Input` → `Validation` → `Sync API` → `Tour Suivant`). Clarifie le code async (IA/Réseau). |
-| **Joueurs** | Faible | ❌ **NON** | Les joueurs sont des *Acteurs*. Le **Strategy Pattern** (Interface `makeMove`) est plus flexible qu'une FSM interne. |
+| Domaine         | Utilité | Verdict | Justification                                                                                             |
+|-----------------|---------|---------|-----------------------------------------------------------------------------------------------------------|
+| **UI / Menus**  | Haute   | ✅ **OUI** | Gère proprement les transitions (`Intro` → `Setup` → `Jeu` → `Fin`) et évite les bugs d'états incohérents. |
+| **Logique Jeu** | Haute   | ✅ **OUI** | Sécurise la boucle de jeu (`Attente Input` → `Validation` → `Sync API` → `Tour Suivant`).                 |
+| **Joueurs**     | Faible  | ❌ **NON** | Les joueurs sont des *Acteurs*. Le **Strategy Pattern** (Interface `makeMove`) est plus flexible.         |
+
 
 ---
 
-## 2026-01-01 : Phase 5 - Infrastructure RL
+| **Streamlit** | Dashboard interactif (`dashboard.py`). | UX supérieure à TB pour trier/comparer les expériences (custom KPIs). |
 
-### Gestion des Checkpoints
+---
+
+## 2026-01-01 : Stratégie de Test & Qualité
 
 | Décision | Description | Justification |
 |----------|-------------|---------------|
-| **Hiérarchie Dossiers** | `models/experiments/{name}/` | Organisation claire pour comparer les runs. |
-| **État Complet** | Sauvegarde `model`, `optimizer`, `replay_buffer`, `metadata`. | Reprise exacte de l'entraînement sans perte. |
-| **JSON Metadata** | Fichier `metadata.json` séparé. | Lecture rapide des stats (win rate, steps) sans charger les poids lourds. |
+| **Tests en 3 Phases** | Phase 1 (Core RL), Phase 2 (Infrastructure), Phase 3 (Intégration). | Approche progressive pour isoler les bugs (du bas vers le haut). |
+| **Objectif > 85%** | Couverture stricte sur les modules de décision (Agent, Réseaux, Jeu). | Sécurise les futurs refactorings et les entraînements longs. |
+| **Mocking local** | Utilisation de fichiers temporaires et de mocks pour les dépendances externes (FS, API). | Tests reproductibles et rapides sans effets de bord. |
 
-### Métriques et Visualisation
-
-| Outil | Usage | Pourquoi ? |
-|-------|-------|------------|
-| **CSV Logging** | `metrics.csv` (append mode). | Simple, portable, parsable par Pandas (Dashboard). |
-| **TensorBoard** | Via `SummaryWriter`. | Standard de l'industrie pour les courbes de loss détaillées. |
-| **Streamlit** | Dashboard interactif (`dashboard.py`). | UX supérieure à TB pour trier/comparer les expériences (custom KPIs). |
 
 ---
 

@@ -140,5 +140,26 @@ models/experiments/mon_experience/
 │   └── checkpoint_1000.pt     # Sauvegarde périodique
 ├── metrics.csv                # Historique complet (pour Dashboard)
 ├── metadata.json              # État global (steps, episodes)
-└── config.json                # Hyperparamètres utilisés
+      - **config.json**                # Hyperparamètres utilisés
 ```
+
+---
+
+## 7. Tests et Qualité
+
+Une suite de tests complète a été mise en place pour garantir la stabilité du moteur RL.
+
+**Exécuter tous les tests :**
+
+```bash
+cd blokus-engine
+python -m pytest tests/ --cov=src/blokus
+```
+
+**Composants testés :**
+
+- **Core RL** : Réseaux de neurones, Agent DQN, Replay Buffer.
+- **Infrastructure** : Checkpoint Manager, Metrics Tracker, Registry.
+- **Intégration** : Boucle d'entraînement complète (mini-session).
+
+**Objectif de couverture** : > 85% sur le cœur RL.
