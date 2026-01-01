@@ -102,13 +102,6 @@ export class SetupManager {
             colorIndicator.className = 'color-indicator';
             colorIndicator.style.backgroundColor = this.COLORS[i];
 
-            // Name Input
-            const nameInput = document.createElement('input');
-            nameInput.type = 'text';
-            nameInput.className = 'setup-input name-input';
-            nameInput.value = this.DEFAULT_NAMES[i];
-            nameInput.placeholder = `Nom Joueur ${i + 1}`;
-
             // Type Select (Human/IA)
             const typeSelect = document.createElement('select');
             typeSelect.className = 'setup-input type-select';
@@ -117,26 +110,45 @@ export class SetupManager {
                 <option value="ai">IA</option>
             `;
 
+            // Input Wrapper for Name/Persona (Right side)
+            const inputWrapper = document.createElement('div');
+            inputWrapper.className = 'input-wrapper';
+            inputWrapper.style.display = 'flex';
+            inputWrapper.style.flex = '1';
+
+            // Name Input
+            const nameInput = document.createElement('input');
+            nameInput.type = 'text';
+            nameInput.className = 'setup-input name-input';
+            nameInput.value = this.DEFAULT_NAMES[i];
+            nameInput.placeholder = `Nom Joueur ${i + 1}`;
+            nameInput.style.width = '100%';
+
             // Persona Select (Hidden by default)
             const personaSelect = document.createElement('select');
             personaSelect.className = 'setup-input persona-select';
             personaSelect.innerHTML = `
-                <option value="random">Aléatoire</option>
-                <option value="aggressive">Agressif</option>
-                <option value="defensive">Défensif</option>
-                <option value="efficient">Efficace</option>
+                <option value="random" title="Joue de manière totalement aléatoire. Niveau : Débutant">Aléatoire</option>
+                <option value="aggressive" title="Cherche à bloquer l'adversaire. Niveau : Moyen">Agressif</option>
+                <option value="defensive" title="Privilégie sa propre sécurité. Niveau : Moyen">Défensif</option>
+                <option value="efficient" title="Cherche à maximiser ses points. Niveau : Difficile">Efficace</option>
             `;
             personaSelect.style.display = 'none';
+            personaSelect.style.width = '100%';
 
             // Show/Hide Persona based on Type
             typeSelect.addEventListener('change', (e) => {
-                personaSelect.style.display = e.target.value === 'ai' ? 'block' : 'none';
+                const isAI = e.target.value === 'ai';
+                nameInput.style.display = isAI ? 'none' : 'block';
+                personaSelect.style.display = isAI ? 'block' : 'none';
             });
 
+            inputWrapper.appendChild(nameInput);
+            inputWrapper.appendChild(personaSelect);
+
             row.appendChild(colorIndicator);
-            row.appendChild(nameInput);
-            row.appendChild(typeSelect);
-            row.appendChild(personaSelect);
+            row.appendChild(typeSelect);     // Type first (left)
+            row.appendChild(inputWrapper);   // Name/Persona second (right, takes remaining space)
 
             this.playersConfigContainer.appendChild(row);
         }
@@ -157,9 +169,14 @@ export class SetupManager {
         const rows = this.playersConfigContainer.querySelectorAll('.player-config-row');
 
         rows.forEach((row, index) => {
-            const name = row.querySelector('.name-input').value || `Joueur ${index + 1}`;
             const type = row.querySelector('.type-select').value;
-            const persona = row.querySelector('.persona-select').value;
+            const personaSelect = row.querySelector('.persona-select');
+            const persona = personaSelect.value;
+
+            let name = row.querySelector('.name-input').value || `Joueur ${index + 1}`;
+            if (type === 'ai') {
+                name = personaSelect.options[personaSelect.selectedIndex].text;
+            }
 
             players.push({
                 id: index,
@@ -180,7 +197,7 @@ export class SetupManager {
                 id: 3,
                 name: 'Neutre (Partagé)',
                 color: this.COLORS[3], // Red usually
-                type: 'SHARED',
+                type: 'shared',
                 persona: null
             });
             finalPlayerCount = 4;

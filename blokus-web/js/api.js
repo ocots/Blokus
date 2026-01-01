@@ -67,12 +67,24 @@ async function _request(endpoint, options = {}) {
 /**
  * Create a new game.
  * @param {number} [numPlayers=4] - Number of players (2-4)
+ * @param {number} [startPlayer=0] - Starting player index (0 to numPlayers-1)
+ * @param {Array} [players=null] - Optional array of player configurations
  * @returns {Promise<Object>} Initial game state
  */
-export async function createGame(numPlayers = 4) {
+export async function createGame(numPlayers = 4, startPlayer = 0, players = null) {
+    const requestBody = { 
+        num_players: numPlayers,
+        start_player: startPlayer
+    };
+    
+    // Include player configurations if provided
+    if (players && players.length > 0) {
+        requestBody.players = players;
+    }
+    
     return _request('/game/new', {
         method: 'POST',
-        body: JSON.stringify({ num_players: numPlayers }),
+        body: JSON.stringify(requestBody),
     });
 }
 

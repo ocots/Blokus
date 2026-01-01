@@ -11,6 +11,7 @@ import uvicorn
 
 from blokus.game import Game, Move
 from blokus.pieces import PieceType
+from blokus.game_manager_factory import GameManagerFactory
 
 from api.models import (
     GameState, PlayerState, MoveRequest, MoveResponse, CreateGameRequest, AIModelInfo
@@ -37,17 +38,29 @@ def get_game_or_404() -> Game:
     return game_instance
 
 def map_game_to_state(game: Game) -> GameState:
+    """Map Game instance to API GameState model."""
+    # Calculate scores for all players
     scores = game.get_scores()
     
     players_states = []
     for i, p in enumerate(game.players):
         # Convert set of PieceType to list of strings
         pieces = sorted([pt.name for pt in p.remaining_pieces])
+        
         players_states.append(PlayerState(
             id=p.id,
+            name=p.name,
+            color=p.color,
+            type=p.type.value,
+            persona=p.persona,
             pieces_remaining=pieces,
+            pieces_count=p.pieces_count,
+            squares_remaining=p.squares_remaining,
             score=scores[i],
-            has_passed=p.has_passed
+            has_passed=p.has_passed,
+            status=p.status.value,
+            display_name=p.display_name,
+            turn_order=p.turn_order
         ))
     
     return GameState(
@@ -70,8 +83,43 @@ def list_ai_models():
 
 @app.post("/game/new", response_model=GameState)
 def create_game(request: CreateGameRequest):
+    """
+    Create a new game with configured players.
+    
+    Uses GameManagerFactory to create players with proper configuration.
+    """
     global game_instance
-    game_instance = Game(num_players=request.num_players)
+    
+    # Use start_player if provided, otherwise default to 0
+    starting_player = request.start_player if request.start_player is not None else 0
+    
+    if request.players:
+        # Create game from player configurations
+        player_configs = []
+        for i, player_config in enumerate(request.players):
+            config = {
+                "id": i,
+                "name": player_config.name,
+                "type": player_config.type,
+            }
+            if player_config.persona:
+                config["persona"] = player_config.persona
+            player_configs.append(config)
+        
+        # Use GameManagerFactory to create GameManager with configured players
+        game_manager = GameManagerFactory.create_from_config(
+            player_configs, 
+            starting_player_id=starting_player
+        )
+        game_instance = Game(game_manager=game_manager)
+    else:
+        # Create standard game with default players
+        game_manager = GameManagerFactory.create_standard_game(
+            num_players=request.num_players,
+            starting_player_id=starting_player
+        )
+        game_instance = Game(game_manager=game_manager)
+    
     return map_game_to_state(game_instance)
 
 @app.get("/game/state", response_model=GameState)

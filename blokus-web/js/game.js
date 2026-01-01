@@ -182,7 +182,9 @@ export class Game {
         if (!this._useApi) return;
 
         try {
-            const state = await this._apiClient.createGame(this._numPlayers);
+            const startPlayer = this._config.startPlayer || 0;
+            const players = this._config.players || null;
+            const state = await this._apiClient.createGame(this._numPlayers, startPlayer, players);
             this._syncFromServerState(state);
         } catch (err) {
             console.error('API init failed:', err);
@@ -263,7 +265,7 @@ export class Game {
         this._nextTurn();
 
         // 3-Player Logic
-        if (this._players[playerId].type === 'SHARED') {
+        if (this._players[playerId].type === 'shared') {
             this._sharedTurnControllerIndex++;
             this._updateUI();
         }
@@ -302,7 +304,7 @@ export class Game {
         this._nextTurn();
 
         // 3-Player Logic
-        if (player.type === 'SHARED') {
+        if (player.type === 'shared') {
             this._sharedTurnControllerIndex++;
             this._updateUI();
         }
@@ -492,7 +494,7 @@ export class Game {
         let displayName = currentPlayer.name;
 
         // 3-Player Logic: Show controller name
-        if (currentPlayer.type === 'SHARED') {
+        if (currentPlayer.type === 'shared') {
             const controllerId = this._sharedTurnControllerIndex % 3;
             // Ensure controllerId is valid
             const controller = this._players[controllerId];
