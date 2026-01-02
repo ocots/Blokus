@@ -9,8 +9,9 @@ learning on noise due to channel permutations or incorrect encoding.
 import pytest
 import numpy as np
 from blokus.game import Game, Move
-from blokus.pieces import PieceType
-from blokus.rl.observations import create_observation, NUM_CHANNELS
+from blokus.pieces import PieceType, ORIENTATION_HORIZONTAL
+from blokus.rl.observations import create_observation
+from blokus.rl.channels import ObservationChannel, NUM_CHANNELS
 
 
 class TestObservationContent:
@@ -23,7 +24,8 @@ class TestObservationContent:
         
         # Channels 0-3 are player pieces (should be 0 on empty board)
         for player_id in range(2):
-            assert obs[:, :, player_id].sum() == 0, f"Player {player_id} channel should be empty"
+            channel = ObservationChannel.PLAYER_1_OCCUPANCY + player_id
+            assert obs[:, :, channel].sum() == 0, f"Player {player_id} channel should be empty"
     
     def test_player_piece_placement_channel_0(self):
         """Placing a piece for player 0 should update channel 0."""
@@ -36,11 +38,14 @@ class TestObservationContent:
         obs = create_observation(game)
         
         # Channel 0 = player 0's pieces
-        assert obs[0, 0, 0] == 1.0, "Player 0's piece should be at (0,0)"
-        assert obs[0, 0, 1] == 0.0, "Player 1 should have no piece at (0,0)"
+        channel_p0 = ObservationChannel.PLAYER_1_OCCUPANCY
+        channel_p1 = ObservationChannel.PLAYER_2_OCCUPANCY
+        
+        assert obs[0, 0, channel_p0] == 1.0, "Player 0's piece should be at (0,0)"
+        assert obs[0, 0, channel_p1] == 0.0, "Player 1 should have no piece at (0,0)"
         
         # Rest of player 0's channel should be empty
-        assert obs[:, :, 0].sum() == 1.0, "Only one cell should be occupied"
+        assert obs[:, :, channel_p0].sum() == 1.0, "Only one cell should be occupied"
     
     def test_player_piece_placement_channel_1(self):
         """Placing a piece for player 1 should update channel 1."""
@@ -56,10 +61,13 @@ class TestObservationContent:
         
         obs = create_observation(game)
         
+        channel_p0 = ObservationChannel.PLAYER_1_OCCUPANCY
+        channel_p1 = ObservationChannel.PLAYER_2_OCCUPANCY
+        
         # Channel 1 = player 1's pieces
-        assert obs[0, 19, 1] == 1.0, "Player 1's piece should be at (0,19)"
-        assert obs[0, 19, 0] == 0.0, "Player 0 should have no piece at (0,19)"
-        assert obs[0, 0, 1] == 0.0, "Player 1 should have no piece at (0,0)"
+        assert obs[0, 19, channel_p1] == 1.0, "Player 1's piece should be at (0,19)"
+        assert obs[0, 19, channel_p0] == 0.0, "Player 0 should have no piece at (0,19)"
+        assert obs[0, 0, channel_p1] == 0.0, "Player 1 should have no piece at (0,0)"
     
     def test_multi_cell_piece_placement(self):
         """Placing a multi-cell piece should update all cells."""
@@ -67,15 +75,17 @@ class TestObservationContent:
         
         # Place I2 (domino) at (0,0) for player 0
         # I2 orientation 1 is horizontal: occupies (0,0) and (0,1)
-        move = Move(player_id=0, piece_type=PieceType.I2, orientation=1, row=0, col=0)
+        move = Move(player_id=0, piece_type=PieceType.I2, orientation=ORIENTATION_HORIZONTAL, row=0, col=0)
         game.play_move(move)
         
         obs = create_observation(game)
         
+        channel_p0 = ObservationChannel.PLAYER_1_OCCUPANCY
+        
         # Both cells should be marked
-        assert obs[0, 0, 0] == 1.0, "Cell (0,0) should be occupied"
-        assert obs[0, 1, 0] == 1.0, "Cell (0,1) should be occupied"
-        assert obs[:, :, 0].sum() == 2.0, "Exactly 2 cells should be occupied"
+        assert obs[0, 0, channel_p0] == 1.0, "Cell (0,0) should be occupied"
+        assert obs[0, 1, channel_p0] == 1.0, "Cell (0,1) should be occupied"
+        assert obs[:, :, channel_p0].sum() == 2.0, "Exactly 2 cells should be occupied"
     
     def test_available_pieces_channels(self):
         """Channels 17-37 should indicate available pieces for current player."""
@@ -85,7 +95,7 @@ class TestObservationContent:
         # Initially, all pieces should be available (channels 17-37 for current player)
         # Each piece channel should be all 1s if available
         for piece_idx in range(21):
-            channel_idx = 17 + piece_idx
+            channel_idx = ObservationChannel.AVAILABLE_PIECES_START + piece_idx
             # Available piece = all cells set to 1
             assert obs[0, 0, channel_idx] == 1.0, f"Piece {piece_idx} should be available"
     
@@ -101,12 +111,12 @@ class TestObservationContent:
         obs = create_observation(game, perspective_player=1)
         
         # For player 1, I1 should still be available (they haven't played it)
-        i1_channel_idx = 17 + list(PieceType).index(PieceType.I1)
+        i1_channel_idx = ObservationChannel.AVAILABLE_PIECES_START + list(PieceType).index(PieceType.I1)
         assert obs[0, 0, i1_channel_idx] == 1.0, "I1 should be available for player 1"
         
         # Check from player 0's perspective
         obs0 = create_observation(game, perspective_player=0)
-        i1_channel_idx = 17 + list(PieceType).index(PieceType.I1)
+        i1_channel_idx = ObservationChannel.AVAILABLE_PIECES_START + list(PieceType).index(PieceType.I1)
         assert obs0[0, 0, i1_channel_idx] == 0.0, "I1 should no longer be available for player 0"
     
     def test_first_move_flags(self):
@@ -116,7 +126,7 @@ class TestObservationContent:
         
         # All players should have first move flag set initially
         for player_id in range(4):
-            first_move_channel = 42 + player_id
+            first_move_channel = ObservationChannel.PLAYER_1_FIRST_MOVE + player_id
             assert obs[0, 0, first_move_channel] == 1.0, f"Player {player_id} should have first move flag"
     
     def test_first_move_flag_cleared_after_move(self):
@@ -130,10 +140,12 @@ class TestObservationContent:
         obs = create_observation(game)
         
         # Player 0's first move flag should be cleared
-        assert obs[0, 0, 42] == 0.0, "Player 0 should no longer have first move flag"
+        channel_p0_first = ObservationChannel.PLAYER_1_FIRST_MOVE
+        assert obs[0, 0, channel_p0_first] == 0.0, "Player 0 should no longer have first move flag"
         
         # Player 1's first move flag should still be set
-        assert obs[0, 0, 43] == 1.0, "Player 1 should still have first move flag"
+        channel_p1_first = ObservationChannel.PLAYER_2_FIRST_MOVE
+        assert obs[0, 0, channel_p1_first] == 1.0, "Player 1 should still have first move flag"
     
     def test_current_player_channel(self):
         """Channel 46 should indicate current player."""
@@ -143,7 +155,8 @@ class TestObservationContent:
         # Current player channel should be filled with player ID / (num_players - 1)
         # For player 0 in 2-player game: 0 / 1 = 0.0
         expected_value = 0.0 / (2 - 1) if 2 > 1 else 0.0
-        assert obs[0, 0, 46] == expected_value, "Current player channel incorrect"
+        channel = ObservationChannel.CURRENT_PLAYER_ID
+        assert obs[0, 0, channel] == expected_value, "Current player channel incorrect"
     
     def test_no_nan_or_inf_values(self):
         """Observations should never contain NaN or Inf."""

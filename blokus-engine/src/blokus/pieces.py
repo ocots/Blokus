@@ -6,7 +6,7 @@ and can be rotated (4 rotations) and flipped (2 states) for up to 8 orientations
 """
 
 from dataclasses import dataclass
-from enum import Enum
+from enum import Enum, IntEnum
 from typing import List, Tuple, Set, FrozenSet
 import numpy as np
 
@@ -43,6 +43,41 @@ class PieceType(Enum):
     X = "X"
     Y = "Y"
     Z = "Z"
+
+
+class PieceOrientation(IntEnum):
+    """
+    Orientation index for pieces.
+    
+    The semantic meaning (horizontal/vertical) depends on the piece shape,
+    but generally:
+    - ORIENTATION_0: Default orientation (often vertical for I pieces)
+    - ORIENTATION_1: Rotated 90 degrees
+    - ...
+    
+    For symmetric pieces (like I1), duplicates are filtered out, 
+    so only valid indices exist in PIECES[piece_type].
+    """
+    ORIENTATION_0 = 0
+    ORIENTATION_1 = 1
+    ORIENTATION_2 = 2
+    ORIENTATION_3 = 3
+    ORIENTATION_4 = 4
+    ORIENTATION_5 = 5
+    ORIENTATION_6 = 6
+    ORIENTATION_7 = 7
+
+# Semantic aliases for common orientations (especially for I pieces)
+# Note: These depend on the base shape definition.
+# For I2, I3, I4, I5 defined vertically: orientation 0 is vertical, 1 is horizontal.
+# BUT current definitions in PIECE_SHAPES vary (I2 is horizontal [(0,0), (0,1)] in definition?)
+# Let's check PIECE_SHAPES to be sure.
+# Wait, my previous test showed:
+# I2 Orientation 0: [(0, 0), (1, 0)] -> VERTICAL
+# I2 Orientation 1: [(0, 0), (0, 1)] -> HORIZONTAL
+# So for I pieces:
+ORIENTATION_VERTICAL = PieceOrientation.ORIENTATION_0
+ORIENTATION_HORIZONTAL = PieceOrientation.ORIENTATION_1
 
 
 # Base shapes as list of (row, col) coordinates relative to origin (0,0)

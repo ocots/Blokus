@@ -17,12 +17,12 @@ Channel Layout:
 """
 
 import numpy as np
-from typing import List, Optional
-from blokus.game import Game
-from blokus.pieces import PieceType, PIECES
+from typing import List, Optional, Tuple, Set
+import numpy as np
 
-# Total number of channels in observation tensor
-NUM_CHANNELS = 47
+from blokus.game import Game, GameStatus
+from blokus.pieces import PieceType, PIECES
+from blokus.rl.channels import ObservationChannel, NUM_CHANNELS
 
 # Maximum possible turns in a game (theoretical max with 4 players × 21 pieces)
 MAX_TURNS = 84
@@ -56,53 +56,60 @@ def create_observation(
     # Channels 0-3: Player occupancy
     for player_id in range(4):
         if player_id < game.num_players:
-            obs[:, :, player_id] = (game.board.grid == player_id + 1).astype(np.float32)
+            channel = ObservationChannel.PLAYER_1_OCCUPANCY + player_id
+            obs[:, :, channel] = (game.board.grid == player_id + 1).astype(np.float32)
     
     # Channels 4-7: Valid corners per player
     for player_id in range(4):
         if player_id < game.num_players:
             corners = _get_valid_corners(game, player_id)
+            channel = ObservationChannel.PLAYER_1_CORNERS + player_id
             for row, col in corners:
                 if 0 <= row < board_size and 0 <= col < board_size:
-                    obs[row, col, 4 + player_id] = 1.0
+                    obs[row, col, channel] = 1.0
     
     # Channels 8-11: History T-1
     if len(history) >= 1:
         prev_game = history[0]
         for player_id in range(min(4, prev_game.num_players)):
-            obs[:, :, 8 + player_id] = (prev_game.board.grid == player_id + 1).astype(np.float32)
+            channel = ObservationChannel.HISTORY_T1_PLAYER_1 + player_id
+            obs[:, :, channel] = (prev_game.board.grid == player_id + 1).astype(np.float32)
     
     # Channels 12-15: History T-2
     if len(history) >= 2:
         prev_game = history[1]
         for player_id in range(min(4, prev_game.num_players)):
-            obs[:, :, 12 + player_id] = (prev_game.board.grid == player_id + 1).astype(np.float32)
+            channel = ObservationChannel.HISTORY_T2_PLAYER_1 + player_id
+            obs[:, :, channel] = (prev_game.board.grid == player_id + 1).astype(np.float32)
     
     # Channel 16: Turn number (normalized)
-    obs[:, :, 16] = min(game.turn_number / MAX_TURNS, 1.0)
+    obs[:, :, ObservationChannel.TURN_NUMBER] = min(game.turn_number / MAX_TURNS, 1.0)
     
     # Channels 17-37: Current player's remaining pieces (21 channels)
     current_player = game.players[perspective_player]
     for i, piece_type in enumerate(PieceType):
         if piece_type in current_player.remaining_pieces:
             # Fill channel with the piece shape as indicator
-            obs[:, :, 17 + i] = 1.0
+            channel = ObservationChannel.AVAILABLE_PIECES_START + i
+            obs[:, :, channel] = 1.0
     
     # Channels 38-41: Other players' remaining piece count (normalized)
     for player_id in range(4):
         if player_id < game.num_players:
             player = game.players[player_id]
             normalized_count = len(player.remaining_pieces) / 21.0
-            obs[:, :, 38 + player_id] = normalized_count
+            channel = ObservationChannel.PLAYER_1_PIECE_COUNT + player_id
+            obs[:, :, channel] = normalized_count
     
     # Channels 42-45: First move flag per player
     for player_id in range(4):
         if player_id < game.num_players:
             is_first = game.is_first_move(player_id)
-            obs[:, :, 42 + player_id] = 1.0 if is_first else 0.0
+            channel = ObservationChannel.PLAYER_1_FIRST_MOVE + player_id
+            obs[:, :, channel] = 1.0 if is_first else 0.0
     
     # Channel 46: Current player indicator
-    obs[:, :, 46] = float(perspective_player) / 3.0  # Normalized 0-1
+    obs[:, :, ObservationChannel.CURRENT_PLAYER_ID] = float(perspective_player) / 3.0  # Normalized 0-1
     
     return obs
 
