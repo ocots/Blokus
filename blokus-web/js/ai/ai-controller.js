@@ -68,7 +68,11 @@ export class AIController {
                     await this._animator.animateThinking(move.piece, move.row, move.col, 400);
                 }
                 
-                await gameContext.playMove(move.piece, move.row, move.col);
+                // playMove can return boolean (local) or Promise (API)
+                const result = gameContext.playMove(move.piece, move.row, move.col);
+                if (result instanceof Promise) {
+                    await result;
+                }
                 
                 // Animate placement confirmation
                 if (this._animator) {
@@ -76,7 +80,11 @@ export class AIController {
                 }
             } else {
                 console.log(`🤖 AI Player ${gameContext.playerId} has no valid moves, passing...`);
-                await gameContext.passTurn();
+                // passTurn can return boolean (local) or Promise (API)
+                const result = gameContext.passTurn();
+                if (result instanceof Promise) {
+                    await result;
+                }
             }
             
             // Hide thinking indicator
