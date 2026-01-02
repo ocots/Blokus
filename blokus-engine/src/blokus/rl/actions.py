@@ -18,29 +18,29 @@ from dataclasses import dataclass
 
 from blokus.game import Game, Move
 from blokus.pieces import PieceType, PIECES, get_piece
+from blokus.rl.encoding import ActionEncoding
 
 
 # Maximum orientations per piece (some pieces have fewer due to symmetry)
-MAX_ORIENTATIONS = 8
+MAX_ORIENTATIONS = ActionEncoding.NUM_ORIENTATIONS
 
 
 @dataclass
 class ActionSpaceConfig:
     """Configuration for action space encoding."""
     board_size: int = 20
-    num_piece_types: int = 21
-    max_orientations: int = MAX_ORIENTATIONS
+    num_piece_types: int = ActionEncoding.NUM_PIECES
+    max_orientations: int = ActionEncoding.NUM_ORIENTATIONS
     
     @property
     def total_actions(self) -> int:
         """Total number of possible actions."""
-        return self.num_piece_types * self.max_orientations * self.board_size * self.board_size
+        return ActionEncoding.get_size(self.board_size)
 
 
 def get_action_space_size(board_size: int = 20) -> int:
     """Get the total action space size for a given board size."""
-    config = ActionSpaceConfig(board_size=board_size)
-    return config.total_actions
+    return ActionEncoding.get_size(board_size)
 
 
 def encode_action(move: Move, board_size: int = 20) -> int:
@@ -55,19 +55,13 @@ def encode_action(move: Move, board_size: int = 20) -> int:
         Integer action index
     """
     piece_idx = list(PieceType).index(move.piece_type)
-    orientation = move.orientation
-    row = move.row
-    col = move.col
-    
-    # Flatten: piece_idx * (orientations * positions) + orientation * positions + position
-    positions_per_orientation = board_size * board_size
-    orientations_per_piece = MAX_ORIENTATIONS * positions_per_orientation
-    
-    action = (piece_idx * orientations_per_piece + 
-              orientation * positions_per_orientation + 
-              row * board_size + col)
-    
-    return action
+    return ActionEncoding.encode(
+        piece_idx=piece_idx,
+        orientation=move.orientation,
+        row=move.row,
+        col=move.col,
+        board_size=board_size
+    )
 
 
 def decode_action(action: int, game: Game) -> Optional[Move]:
@@ -82,16 +76,9 @@ def decode_action(action: int, game: Game) -> Optional[Move]:
         Move object, or None if action is invalid
     """
     board_size = game.board.size
-    positions_per_orientation = board_size * board_size
-    orientations_per_piece = MAX_ORIENTATIONS * positions_per_orientation
     
-    # Decode components
-    piece_idx = action // orientations_per_piece
-    remainder = action % orientations_per_piece
-    orientation = remainder // positions_per_orientation
-    position = remainder % positions_per_orientation
-    row = position // board_size
-    col = position % board_size
+    # Decode using helper
+    piece_idx, orientation, row, col = ActionEncoding.decode(action, board_size)
     
     # Validate piece index
     piece_types = list(PieceType)

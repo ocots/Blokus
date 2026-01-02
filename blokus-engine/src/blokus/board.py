@@ -6,10 +6,23 @@ Each cell can be empty (0) or occupied by a player (1-4).
 """
 
 from dataclasses import dataclass, field
+from enum import IntEnum
 from typing import List, Set, Tuple, Optional
 import numpy as np
 
 from blokus.pieces import Piece
+
+
+class BoardCell(IntEnum):
+    """
+    Board cell values.
+    Uses IntEnum so that comparisons with integers still work (backward compatibility).
+    """
+    EMPTY = 0
+    PLAYER_1 = 1
+    PLAYER_2 = 2
+    PLAYER_3 = 3
+    PLAYER_4 = 4
 
 
 BOARD_SIZE = 20
@@ -78,7 +91,7 @@ class Board:
         """Check if a cell is empty."""
         if not self.is_valid_position(row, col):
             return False
-        return self.grid[row, col] == 0
+        return self.grid[row, col] == BoardCell.EMPTY
     
     def is_valid_position(self, row: int, col: int) -> bool:
         """Check if position is within board bounds."""
@@ -112,13 +125,14 @@ class Board:
         
         # Place the piece
         for r, c in positions:
-            self.grid[r, c] = player_id + 1  # Store as 1-4
+            # Convert 0-indexed player_id to 1-indexed BoardCell
+            self.grid[r, c] = BoardCell(player_id + 1)
         
         return True
     
     def get_player_cells(self, player_id: int) -> Set[Tuple[int, int]]:
         """Get all cells occupied by a player."""
-        positions = np.argwhere(self.grid == player_id + 1)
+        positions = np.argwhere(self.grid == BoardCell(player_id + 1))
         return {(int(r), int(c)) for r, c in positions}
     
     def get_player_corners(self, player_id: int) -> Set[Tuple[int, int]]:
@@ -175,11 +189,17 @@ class Board:
     
     def count_player_cells(self, player_id: int) -> int:
         """Count cells occupied by a specific player."""
-        return int(np.count_nonzero(self.grid == player_id + 1))
+        return int(np.count_nonzero(self.grid == BoardCell(player_id + 1)))
     
     def to_string(self) -> str:
         """Convert board to a string representation for display."""
-        symbols = {0: ".", 1: "1", 2: "2", 3: "3", 4: "4"}
+        symbols = {
+            BoardCell.EMPTY: ".",
+            BoardCell.PLAYER_1: "1",
+            BoardCell.PLAYER_2: "2",
+            BoardCell.PLAYER_3: "3",
+            BoardCell.PLAYER_4: "4"
+        }
         lines = []
         
         # Column headers
