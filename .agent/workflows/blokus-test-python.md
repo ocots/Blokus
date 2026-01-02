@@ -2,11 +2,15 @@
 description: Python testing workflow for Blokus project
 ---
 
+// turbo-all
+
 # Python Testing Workflow
 
-**Version**: 4.0  
+**Version**: 5.0  
 **Last Updated**: 2026-01-02  
 **Goal**: Run and maintain Python tests for Blokus project with type safety and property-based testing
+
+> 🚀 **Auto-Execution Enabled**: All commands in this workflow run automatically without approval
 
 ## 📋 What This Workflow Does
 
@@ -44,7 +48,69 @@ source .venv/bin/activate && mypy src/blokus --strict
 # Run specific test suites
 source .venv/bin/activate && python -m pytest tests/test_corner_cases.py -v  # Defensive tests
 source .venv/bin/activate && python -m pytest tests/rl/test_obs_validity.py -v  # RL content validation
-source .venv/bin/activate && python -m pytest tests/test_property_based.py -v  # Property-based tests
+source .venv/bin/activate && python -m pytest tests/test_property_based.py -v  # Property-based tests // turbo
+source .venv/bin/activate && python -m pytest tests/test_property_based.py -v --tb=line 2>&1 | tail -100  # Property-based tests with detailed output // turbo
+```
+
+## ⚡ Command Aliases
+
+Pour faciliter l'utilisation, voici des alias pratiques à ajouter dans votre `~/.zshrc` :
+
+```bash
+# Blokus Testing Aliases
+alias blokus-cd='cd /Users/ocots/Documents/Jeux/Blokus'
+alias blokus-venv='source .venv/bin/activate'
+alias blokus-test='source .venv/bin/activate && python -m pytest tests/ -v --tb=short'
+alias blokus-test-tail='source .venv/bin/activate && python -m pytest tests/ -v --tb=short 2>&1 | tail -50'
+alias blokus-test-cov='source .venv/bin/activate && python -m pytest tests/ --cov=src/blokus --cov-report=term-missing'
+alias blokus-mypy='source .venv/bin/activate && mypy src/blokus --strict'
+alias blokus-property-tail='source .venv/bin/activate && python -m pytest tests/test_property_based.py -v --tb=line 2>&1 | tail -100'
+
+# Blokus Engine specific
+alias blokus-engine-cd='cd /Users/ocots/Documents/Jeux/Blokus/blokus-engine'
+alias blokus-engine-test='cd /Users/ocots/Documents/Jeux/Blokus && source venv/bin/activate && python -m pytest blokus-engine/tests/ -v'
+
+# Specific test cases (vos commandes fréquentes)
+alias blokus-test-copy='cd /Users/ocots/Documents/Jeux/Blokus && source venv/bin/activate && python -m pytest blokus-engine/tests/test_ai_system.py::TestGameCopy::test_game_copy_independent_pieces -v'
+```
+
+**Installation rapide** :
+
+```bash
+# Ajouter les alias à votre .zshrc
+cat >> ~/.zshrc << 'EOF'
+
+# Blokus Testing Aliases (added 2026-01-02)
+alias blokus-cd='cd /Users/ocots/Documents/Jeux/Blokus'
+alias blokus-venv='source .venv/bin/activate'
+alias blokus-test='source .venv/bin/activate && python -m pytest tests/ -v --tb=short'
+alias blokus-test-tail='source .venv/bin/activate && python -m pytest tests/ -v --tb=short 2>&1 | tail -50'
+alias blokus-test-cov='source .venv/bin/activate && python -m pytest tests/ --cov=src/blokus --cov-report=term-missing'
+alias blokus-mypy='source .venv/bin/activate && mypy src/blokus --strict'
+alias blokus-property-tail='source .venv/bin/activate && python -m pytest tests/test_property_based.py -v --tb=line 2>&1 | tail -100'
+alias blokus-engine-cd='cd /Users/ocots/Documents/Jeux/Blokus/blokus-engine'
+alias blokus-engine-test='cd /Users/ocots/Documents/Jeux/Blokus && source venv/bin/activate && python -m pytest blokus-engine/tests/ -v'
+alias blokus-test-copy='cd /Users/ocots/Documents/Jeux/Blokus && source venv/bin/activate && python -m pytest blokus-engine/tests/test_ai_system.py::TestGameCopy::test_game_copy_independent_pieces -v'
+EOF
+
+# Recharger votre configuration
+source ~/.zshrc
+```
+
+**Utilisation** :
+
+```bash
+# Au lieu de taper toute la commande
+cd /Users/ocots/Documents/Jeux/Blokus && source venv/bin/activate && python -m pytest blokus-engine/tests/test_ai_system.py::TestGameCopy::test_game_copy_independent_pieces -v
+
+# Tapez simplement
+blokus-test-copy
+
+# Ou pour tous les tests avec tail
+blokus-test-tail
+
+# Pour les tests property-based avec sortie détaillée
+blokus-property-tail
 ```
 
 ## 🔄 Méthodologie TDD
@@ -90,7 +156,6 @@ def set_starting_player(self, player_id: int) -> None:
 ### 1) Run Tests
 
 ```bash
-// turbo
 source .venv/bin/activate && python -m pytest tests/ -v --tb=short
 ```
 
