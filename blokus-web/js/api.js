@@ -135,6 +135,14 @@ export async function resetGame() {
 }
 
 /**
+ * Get AI suggested move for current player.
+ * @returns {Promise<Object>} AI move suggestion with success status and move details
+ */
+export async function getAISuggestedMove() {
+    return _request('/game/ai/suggest', { method: 'POST' });
+}
+
+/**
  * Check if the API server is reachable.
  * @returns {Promise<boolean>} True if server responds
  */
@@ -156,5 +164,6 @@ Object.freeze({
     playMove,
     passTurn,
     resetGame,
+    getAISuggestedMove,
     isServerAvailable,
 });

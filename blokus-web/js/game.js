@@ -135,6 +135,8 @@ export class Game {
                     id: i,
                     name: name,
                     color: playerConfig ? playerConfig.color : null,
+                    type: playerConfig ? playerConfig.type : 'human',
+                    persona: playerConfig ? playerConfig.persona : null,
                     remainingPieces: new Set(getAllPieceTypes()),
                     hasPassed: false,
                     lastPieceWasMonomino: false
@@ -151,6 +153,11 @@ export class Game {
         // Apply settings
         if (this._settings.colorblindMode) {
             this._board.setColorblindMode(true);
+        }
+        
+        // Check if starting player is AI and trigger auto-play
+        if (this._isAIPlayer(this._currentPlayer)) {
+            this._scheduleAIMove();
         }
     }
 
@@ -440,6 +447,11 @@ export class Game {
 
         this._updateUI();
         this.save();
+        
+        // Check if next player is AI and trigger auto-play
+        if (!this._gameOver && this._isAIPlayer(this._currentPlayer)) {
+            this._scheduleAIMove();
+        }
     }
 
     /**
@@ -449,6 +461,140 @@ export class Game {
      */
     _checkGameOver() {
         return this._players.every(p => p.hasPassed);
+    }
+
+    /**
+     * Check if a player is AI
+     * @param {number} playerId
+     * @returns {boolean}
+     * @private
+     */
+    _isAIPlayer(playerId) {
+        const playerConfig = this._config.players?.[playerId];
+        return playerConfig?.type === 'ai';
+    }
+
+    /**
+     * Get current player configuration
+     * @returns {Object|null}
+     * @private
+     */
+    _getCurrentPlayerConfig() {
+        return this._config.players?.[this._currentPlayer];
+    }
+
+    /**
+     * Schedule AI move with random delay
+     * @private
+     */
+    _scheduleAIMove() {
+        // Random delay between 1-3 seconds to simulate thinking
+        const delay = 1000 + Math.random() * 2000;
+        
+        console.log(`🤖 AI Player ${this._currentPlayer} thinking... (${Math.round(delay)}ms)`);
+        
+        setTimeout(() => {
+            this._executeAIMove();
+        }, delay);
+    }
+
+    /**
+     * Execute AI move (local or API mode)
+     * @private
+     */
+    async _executeAIMove() {
+        if (this._gameOver) return;
+        
+        const playerId = this._currentPlayer;
+        
+        // Check if AI has valid moves
+        if (!this._hasValidMove(playerId)) {
+            console.log(`🤖 AI Player ${playerId} has no valid moves, passing...`);
+            this.passTurn();
+            return;
+        }
+        
+        // Get AI move
+        if (this._useApi) {
+            await this._executeAIMoveFromAPI();
+        } else {
+            await this._executeAIMoveLocal();
+        }
+    }
+
+    /**
+     * Execute AI move using API
+     * @private
+     */
+    async _executeAIMoveFromAPI() {
+        try {
+            const response = await this._apiClient.getAISuggestedMove();
+            
+            if (response.success && response.move) {
+                const { piece_type, orientation, row, col } = response.move;
+                
+                // Get piece object
+                const piece = getPiece(piece_type, orientation);
+                
+                console.log(`🤖 AI plays: ${piece_type} at (${row}, ${col})`);
+                
+                // Execute move
+                await this.playMove(piece, row, col);
+            } else {
+                console.warn('AI returned no move, passing...');
+                this.passTurn();
+            }
+        } catch (err) {
+            console.error('AI move failed:', err);
+            this.passTurn();
+        }
+    }
+
+    /**
+     * Execute AI move locally (simple random AI)
+     * @private
+     */
+    async _executeAIMoveLocal() {
+        const playerId = this._currentPlayer;
+        const player = this._players[playerId];
+        const isFirst = this.isFirstMove(playerId);
+        
+        // Simple random AI: try pieces in random order
+        const pieces = Array.from(player.remainingPieces);
+        
+        // Shuffle pieces
+        for (let i = pieces.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [pieces[i], pieces[j]] = [pieces[j], pieces[i]];
+        }
+        
+        // Try each piece
+        for (const type of pieces) {
+            for (const piece of PIECES[type]) {
+                const corners = this._board.getPlayerCorners(playerId);
+                
+                // Shuffle corners for randomness
+                const shuffledCorners = corners.sort(() => Math.random() - 0.5);
+                
+                for (const [cr, cc] of shuffledCorners) {
+                    for (const [pr, pc] of piece.coords) {
+                        const row = cr - pr;
+                        const col = cc - pc;
+                        
+                        if (this._board.isValidPlacement(piece, row, col, playerId, isFirst)) {
+                            // Found valid move!
+                            console.log(`🤖 AI plays: ${type} at (${row}, ${col})`);
+                            this.playMove(piece, row, col);
+                            return;
+                        }
+                    }
+                }
+            }
+        }
+        
+        // No valid move found
+        console.log(`🤖 AI Player ${playerId} found no valid moves, passing...`);
+        this.passTurn();
     }
 
     /**
