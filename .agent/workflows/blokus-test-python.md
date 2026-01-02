@@ -17,14 +17,17 @@ description: Python testing workflow for Blokus project
 
 ## 📚 Required Reading
 
-**Before using this workflow, read**: `@[.agent/workflows/testing-manual.md]`
+**Before using this workflow, read**:
+1. `@[.agent/workflows/testing-manual.md]` - Guide complet des tests
+2. `@[.agent/workflows/testing-methodology.md]` - Méthodologie TDD
 
-This manual contains:
+These manuals contain:
 - Complete testing philosophy
+- TDD methodology (RED-GREEN-REFACTOR)
 - All test types with examples
-- Quality standards
-- Best practices
+- Quality standards and best practices
 - Debugging techniques
+- Diagnostic process
 
 ## 🎯 Quick Start
 
@@ -36,6 +39,44 @@ source .venv/bin/activate && python -m pytest tests/ -v --tb=short
 source .venv/bin/activate && python -m pytest tests/ --cov=src/blokus --cov-report=term-missing
 ```
 
+## 🔄 Méthodologie TDD
+
+### Principe Fondamental
+**NE JAMAIS modifier un test pour le faire passer**  
+Un test qui échoue est une information précieuse sur le code.
+
+### Processus TDD (RED-GREEN-REFACTOR)
+
+#### 🔴 RED - Écrire le test en premier
+```python
+# Toujours écrire le test AVANT le code
+def test_game_manager_sets_starting_player():
+    manager = GameManager(mock_players)
+    manager.set_starting_player(2)
+    assert manager.current_player_index == 2
+```
+
+#### 🟢 GREEN - Implémenter CORRECTEMENT
+```python
+# Implémentation minimale mais CORRECTE
+def set_starting_player(self, player_id: int) -> None:
+    for player in self.players:
+        if player.id == player_id:
+            self.current_player_index = self.players.index(player)
+            return
+    raise ValueError(f"Player with ID {player_id} not found")
+```
+
+#### 🔄 REFACTOR - Améliorer le code
+```python
+# Améliorer la structure SANS changer le comportement
+def set_starting_player(self, player_id: int) -> None:
+    player = self._find_player_by_id(player_id)
+    if player is None:
+        raise ValueError(f"Player with ID {player_id} not found")
+    self.current_player_index = self.players.index(player)
+```
+
 ## 🔄 Workflow Steps
 
 ### 1) Run Tests
@@ -45,20 +86,40 @@ source .venv/bin/activate && python -m pytest tests/ --cov=src/blokus --cov-repo
 source .venv/bin/activate && python -m pytest tests/ -v --tb=short
 ```
 
-### 2) Analyze Results
+### 2) Analyser les Échecs
 
-- ✅ **All pass**: Great! Continue development
-- ❌ **Failures**: Diagnose and fix
+Pour chaque test qui échoue:
+1. **Lire l'erreur**: Que dit l'assertion ?
+2. **Poser les bonnes questions**:
+   - Le test est-il correct ?
+   - Le comportement attendu est-il correct ?
+   - Le code implémente-t-il correctement ?
 
-### 3) Fix Issues
+3. **Décider l'action**:
+   - Test incorrect → 📝 Modifier le test
+   - Spécification incorrecte → 🤔 Revoir la spécification
+   - Code incorrect → 🔧 Corriger le code
+   - Code manquant → ➕ Implémenter le code
 
-For each failing test:
-1. Read the assertion error
-2. Check the testing manual for patterns
-3. Fix code or test
-4. Re-run tests
+### 3) Appliquer TDD
 
-### 4) Verify Coverage
+**Pour nouvelle fonctionnalité**:
+1. Écrire test principal (RED)
+2. Implémenter minimum (GREEN)
+3. Ajouter tests cas limites (RED)
+4. Implémenter validation (GREEN)
+5. Ajouter tests intégration (RED)
+6. Implémenter intégration (GREEN)
+7. Refactoriser (REFACTOR)
+
+**Pour bug fix**:
+1. Reproduire avec test (RED)
+2. Confirmer l'échec
+3. Corriger le bug (GREEN)
+4. Ajouter tests régression (PLUS DE RED)
+5. Implémenter si nécessaire (GREEN)
+
+### 4) Vérifier la Couverture
 
 ```bash
 source .venv/bin/activate && python -m pytest tests/ --cov=src/blokus --cov-report=term-missing
@@ -67,6 +128,13 @@ source .venv/bin/activate && python -m pytest tests/ --cov=src/blokus --cov-repo
 **Required coverage**:
 - Core modules: >95%
 - Overall: >90%
+
+### 5) Répéter le Cycle
+
+Continuer jusqu'à:
+- ✅ Tous les tests passent
+- ✅ Couverture atteinte
+- ✅ Code propre et maintenable
 
 ## 📁 Test Organization
 
