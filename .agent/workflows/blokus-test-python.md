@@ -6,11 +6,11 @@ description: Python testing workflow for Blokus project
 
 # Python Testing Workflow
 
-**Version**: 5.0  
+**Version**: 5.1  
 **Last Updated**: 2026-01-02  
 **Goal**: Run and maintain Python tests for Blokus project with type safety and property-based testing
 
-> 🚀 **Auto-Execution Enabled**: All commands in this workflow run automatically without approval
+> 🚀 **Auto-Execution Enabled**: All commands run automatically without approval (no pipes/redirections)
 
 ## 📋 What This Workflow Does
 
@@ -36,20 +36,29 @@ These manuals contain:
 ## 🎯 Quick Start
 
 ```bash
-# Run all tests
-source .venv/bin/activate && python -m pytest tests/ -v --tb=short
+// turbo
+# Run all tests with compact summary
+source .venv/bin/activate && python -m pytest tests/ -v --tb=line
 
+// turbo
 # Check coverage
-source .venv/bin/activate && python -m pytest tests/ --cov=src/blokus --cov-report=term-missing
+source .venv/bin/activate && python -m pytest tests/ --cov=src/blokus --cov-report=term
 
+// turbo
 # Type checking (critical for preventing bugs)
 source .venv/bin/activate && mypy src/blokus --strict
 
-# Run specific test suites
-source .venv/bin/activate && python -m pytest tests/test_corner_cases.py -v  # Defensive tests
-source .venv/bin/activate && python -m pytest tests/rl/test_obs_validity.py -v  # RL content validation
-source .venv/bin/activate && python -m pytest tests/test_property_based.py -v  # Property-based tests // turbo
-source .venv/bin/activate && python -m pytest tests/test_property_based.py -v --tb=line 2>&1 | tail -100  # Property-based tests with detailed output // turbo
+// turbo
+# Run specific test suites - Defensive tests
+source .venv/bin/activate && python -m pytest tests/test_corner_cases.py -v
+
+// turbo
+# RL content validation
+source .venv/bin/activate && python -m pytest tests/rl/test_obs_validity.py -v
+
+// turbo
+# Property-based tests
+source .venv/bin/activate && python -m pytest tests/test_property_based.py -v --tb=line
 ```
 
 ## ⚡ Command Aliases
@@ -60,18 +69,16 @@ Pour faciliter l'utilisation, voici des alias pratiques à ajouter dans votre `~
 # Blokus Testing Aliases
 alias blokus-cd='cd /Users/ocots/Documents/Jeux/Blokus'
 alias blokus-venv='source .venv/bin/activate'
-alias blokus-test='source .venv/bin/activate && python -m pytest tests/ -v --tb=short'
-alias blokus-test-tail='source .venv/bin/activate && python -m pytest tests/ -v --tb=short 2>&1 | tail -50'
-alias blokus-test-cov='source .venv/bin/activate && python -m pytest tests/ --cov=src/blokus --cov-report=term-missing'
+alias blokus-test='source .venv/bin/activate && python -m pytest tests/ -v --tb=line'
+alias blokus-test-x='source .venv/bin/activate && python -m pytest tests/ -v -x'
+alias blokus-test-lf='source .venv/bin/activate && python -m pytest tests/ -v --lf'
+alias blokus-test-cov='source .venv/bin/activate && python -m pytest tests/ --cov=src/blokus --cov-report=term'
 alias blokus-mypy='source .venv/bin/activate && mypy src/blokus --strict'
-alias blokus-property-tail='source .venv/bin/activate && python -m pytest tests/test_property_based.py -v --tb=line 2>&1 | tail -100'
+alias blokus-property='source .venv/bin/activate && python -m pytest tests/test_property_based.py -v --tb=line'
 
 # Blokus Engine specific
 alias blokus-engine-cd='cd /Users/ocots/Documents/Jeux/Blokus/blokus-engine'
-alias blokus-engine-test='cd /Users/ocots/Documents/Jeux/Blokus && source venv/bin/activate && python -m pytest blokus-engine/tests/ -v'
-
-# Specific test cases (vos commandes fréquentes)
-alias blokus-test-copy='cd /Users/ocots/Documents/Jeux/Blokus && source venv/bin/activate && python -m pytest blokus-engine/tests/test_ai_system.py::TestGameCopy::test_game_copy_independent_pieces -v'
+alias blokus-engine-test='cd /Users/ocots/Documents/Jeux/Blokus/blokus-engine && source .venv/bin/activate && python -m pytest tests/ -v'
 ```
 
 **Installation rapide** :
@@ -83,14 +90,14 @@ cat >> ~/.zshrc << 'EOF'
 # Blokus Testing Aliases (added 2026-01-02)
 alias blokus-cd='cd /Users/ocots/Documents/Jeux/Blokus'
 alias blokus-venv='source .venv/bin/activate'
-alias blokus-test='source .venv/bin/activate && python -m pytest tests/ -v --tb=short'
-alias blokus-test-tail='source .venv/bin/activate && python -m pytest tests/ -v --tb=short 2>&1 | tail -50'
-alias blokus-test-cov='source .venv/bin/activate && python -m pytest tests/ --cov=src/blokus --cov-report=term-missing'
+alias blokus-test='source .venv/bin/activate && python -m pytest tests/ -v --tb=line'
+alias blokus-test-x='source .venv/bin/activate && python -m pytest tests/ -v -x'
+alias blokus-test-lf='source .venv/bin/activate && python -m pytest tests/ -v --lf'
+alias blokus-test-cov='source .venv/bin/activate && python -m pytest tests/ --cov=src/blokus --cov-report=term'
 alias blokus-mypy='source .venv/bin/activate && mypy src/blokus --strict'
-alias blokus-property-tail='source .venv/bin/activate && python -m pytest tests/test_property_based.py -v --tb=line 2>&1 | tail -100'
+alias blokus-property='source .venv/bin/activate && python -m pytest tests/test_property_based.py -v --tb=line'
 alias blokus-engine-cd='cd /Users/ocots/Documents/Jeux/Blokus/blokus-engine'
-alias blokus-engine-test='cd /Users/ocots/Documents/Jeux/Blokus && source venv/bin/activate && python -m pytest blokus-engine/tests/ -v'
-alias blokus-test-copy='cd /Users/ocots/Documents/Jeux/Blokus && source venv/bin/activate && python -m pytest blokus-engine/tests/test_ai_system.py::TestGameCopy::test_game_copy_independent_pieces -v'
+alias blokus-engine-test='cd /Users/ocots/Documents/Jeux/Blokus/blokus-engine && source .venv/bin/activate && python -m pytest tests/ -v'
 EOF
 
 # Recharger votre configuration
@@ -100,17 +107,17 @@ source ~/.zshrc
 **Utilisation** :
 
 ```bash
-# Au lieu de taper toute la commande
-cd /Users/ocots/Documents/Jeux/Blokus && source venv/bin/activate && python -m pytest blokus-engine/tests/test_ai_system.py::TestGameCopy::test_game_copy_independent_pieces -v
+# Tests complets avec résumé compact
+blokus-test
 
-# Tapez simplement
-blokus-test-copy
+# Arrêt au premier échec
+blokus-test-x
 
-# Ou pour tous les tests avec tail
-blokus-test-tail
+# Relancer seulement les tests qui ont échoué
+blokus-test-lf
 
-# Pour les tests property-based avec sortie détaillée
-blokus-property-tail
+# Tests property-based
+blokus-property
 ```
 
 ## 🔄 Méthodologie TDD
@@ -156,7 +163,8 @@ def set_starting_player(self, player_id: int) -> None:
 ### 1) Run Tests
 
 ```bash
-source .venv/bin/activate && python -m pytest tests/ -v --tb=short
+// turbo
+source .venv/bin/activate && python -m pytest tests/ -v --tb=line
 ```
 
 ### 2) Analyser les Échecs
@@ -195,7 +203,8 @@ Pour chaque test qui échoue:
 ### 4) Vérifier la Couverture
 
 ```bash
-source .venv/bin/activate && python -m pytest tests/ --cov=src/blokus --cov-report=term-missing
+// turbo
+source .venv/bin/activate && python -m pytest tests/ --cov=src/blokus --cov-report=term
 ```
 
 **Required coverage**:
@@ -280,17 +289,28 @@ tests/
 3. ✅ No critical failures
 4. ✅ Code quality maintained
 
-## 🔧 Optional Commands
+## 🔧 Useful Pytest Options
 
 ```bash
-# Type checking
-source .venv/bin/activate && mypy src/
+// turbo
+# Stop at first failure
+source .venv/bin/activate && python -m pytest tests/ -v -x
 
-# Linting
-source .venv/bin/activate && ruff check src/
+// turbo
+# Rerun only failed tests
+source .venv/bin/activate && python -m pytest tests/ -v --lf
 
-# Run specific test
-source .venv/bin/activate && python -m pytest tests/test_game_manager.py -v
+// turbo
+# Show 10 slowest tests
+source .venv/bin/activate && python -m pytest tests/ -v --durations=10
+
+// turbo
+# Verbose output with full tracebacks
+source .venv/bin/activate && python -m pytest tests/ -v --tb=long
+
+// turbo
+# No traceback, summary only
+source .venv/bin/activate && python -m pytest tests/ -v --tb=no
 ```
 
 ## 📖 References
@@ -298,7 +318,16 @@ source .venv/bin/activate && python -m pytest tests/test_game_manager.py -v
 - **Testing Manual**: `@[.agent/workflows/testing-manual.md]`
 - **Test Coverage Analysis**: `../docs/reports/test-types-analysis.md`
 - **Test Implementation**: `../docs/reports/final-test-summary.md`
+- **Safe Commands Guide**: `../docs/reports/guide_commandes_safe_auto_execution.md`
 
 ---
 
 **Remember**: Tests are documentation. Keep them clean and meaningful.
+
+## 🆕 Version 5.1 Changes
+
+- ✅ Removed all pipes and redirections for auto-execution
+- ✅ Added `--tb=line` for compact summaries
+- ✅ Added useful pytest options section
+- ✅ Updated aliases to use simplified commands
+- ✅ All commands now run automatically without confirmation

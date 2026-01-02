@@ -50,6 +50,13 @@ class TestGameStateManagement:
         for player in self.game.players:
             player.has_passed = True
 
+        # Check that game manager detects game over
+        assert self.game.game_manager.is_game_over() is True
+        
+        # Trigger status update by calling _next_turn()
+        self.game._next_turn()
+        
+        # Check that game status is updated
         assert self.game.status == GameStatus.FINISHED
 
     def test_game_not_over_when_player_can_move(self):
@@ -141,25 +148,28 @@ class TestMoveValidation:
         """Test that valid moves are accepted"""
         # This tests the core game logic
         from blokus.pieces import get_piece, PieceType
+        from blokus.rules import is_valid_placement
         player_id = 0
         piece = get_piece(PieceType.I1, 0)
 
         # First move at starting corner
-        is_valid = self.game.board.is_valid_placement(
-            piece, 0, 0, player_id, is_first=True
+        is_valid = is_valid_placement(
+            self.game.board, piece, 0, 0, player_id, is_first_move=True
         )
-        # Should be valid at starting corner
+        
+        assert is_valid is True
         assert isinstance(is_valid, bool)
 
     def test_invalid_move_rejection(self):
         """Test that invalid moves are rejected"""
         from blokus.pieces import get_piece, PieceType
+        from blokus.rules import is_valid_placement
         player_id = 0
         piece = get_piece(PieceType.I1, 0)
 
         # Out of bounds placement
-        is_valid = self.game.board.is_valid_placement(
-            piece, -5, -5, player_id, is_first=True
+        is_valid = is_valid_placement(
+            self.game.board, piece, -5, -5, player_id, is_first_move=True
         )
         assert not is_valid
 
@@ -235,13 +245,17 @@ class TestGameCopy:
         # Get initial piece count
         initial_pieces = len(self.game.players[0].remaining_pieces)
 
+        # Copy the game BEFORE modification
+        game_copy = self.game.copy()
+
         # Modify original player's pieces
         piece_type = list(self.game.players[0].remaining_pieces)[0]
         self.game.players[0].remaining_pieces.discard(piece_type)
 
-        game_copy = self.game.copy()
-
-        # Copy should have the original piece count
+        # Original should have fewer pieces
+        assert len(self.game.players[0].remaining_pieces) == initial_pieces - 1
+        
+        # Copy should still have the original piece count
         assert len(game_copy.players[0].remaining_pieces) == initial_pieces
 
 

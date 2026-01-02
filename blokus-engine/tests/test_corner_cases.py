@@ -28,16 +28,21 @@ class TestInvalidInputs:
         """Move with invalid piece type should be rejected."""
         game = Game()
         
-        # Create move with invalid piece type (not in enum)
-        with pytest.raises((ValueError, KeyError, AttributeError)):
-            move = Move(
-                player_id=0,
-                piece_type=999,  # Invalid
-                orientation=0,
-                row=0,
-                col=0
-            )
-            game.is_valid_move(move)
+        # Move can be created with invalid type, but get_piece() should fail
+        move = Move(
+            player_id=0,
+            piece_type=999,  # Invalid - not a PieceType enum
+            orientation=0,
+            row=0,
+            col=0
+        )
+        
+        # get_piece() should fail with invalid piece type
+        with pytest.raises((KeyError, ValueError)):
+            move.get_piece()
+        
+        # is_valid_move() should return False for invalid piece
+        assert not game.is_valid_move(move)
     
     def test_move_with_invalid_player_id(self):
         """Move with invalid player ID should be rejected."""
