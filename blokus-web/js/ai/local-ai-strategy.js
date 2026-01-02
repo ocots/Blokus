@@ -23,19 +23,35 @@ export class LocalAIStrategy extends AIStrategy {
         const { playerId, players, board, isFirstMove, getPieces } = gameContext;
         
         if (!gameContext.hasValidMove(playerId)) {
+            console.log(`🤖 AI ${playerId}: No valid move (hasValidMove returned false)`);
             return null; // No valid move
         }
 
         const player = players[playerId];
         const pieces = Array.from(player.remainingPieces);
         
+        if (pieces.length === 0) {
+            console.log(`🤖 AI ${playerId}: No pieces remaining`);
+            return null;
+        }
+        
         // Shuffle pieces for randomness
         this._shuffle(pieces);
         
         // Try each piece
         for (const type of pieces) {
-            for (const piece of getPieces(type)) {
+            const piecesOfType = getPieces(type);
+            if (!piecesOfType || piecesOfType.length === 0) {
+                continue;
+            }
+            
+            for (const piece of piecesOfType) {
                 const corners = board.getPlayerCorners(playerId);
+                
+                if (!corners || corners.length === 0) {
+                    console.warn(`🤖 AI ${playerId}: No corners found for piece ${type}`);
+                    continue;
+                }
                 
                 // Shuffle corners for randomness
                 this._shuffle(corners);
@@ -47,6 +63,7 @@ export class LocalAIStrategy extends AIStrategy {
                         
                         if (board.isValidPlacement(piece, row, col, playerId, isFirstMove(playerId))) {
                             // Found valid move!
+                            console.log(`🤖 AI ${playerId}: Found move - ${type} at (${row}, ${col})`);
                             return { piece, row, col };
                         }
                     }
@@ -54,6 +71,7 @@ export class LocalAIStrategy extends AIStrategy {
             }
         }
         
+        console.warn(`🤖 AI ${playerId}: No valid move found despite hasValidMove=true!`);
         return null; // No valid move found
     }
 

@@ -244,6 +244,18 @@ export class Game {
         const playerId = this._currentPlayer;
         const isFirst = this.isFirstMove(playerId);
 
+        // Check if player is in correct state (for human players)
+        if (!this._isAIPlayer(playerId)) {
+            const playerState = this._playerStates[playerId];
+            if (playerState && !playerState.isActive()) {
+                console.warn(`Player ${playerId} is not in ACTIVE state (current: ${playerState.state})`);
+                // Force activate if needed (safety fallback)
+                if (playerState.canTransitionTo('active')) {
+                    playerState.activate();
+                }
+            }
+        }
+
         // Validate locally first (fast feedback)
         if (!this._board.isValidPlacement(piece, row, col, playerId, isFirst)) {
             return false;
