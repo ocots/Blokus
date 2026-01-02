@@ -44,7 +44,9 @@ export class AIAnimator {
 
         return new Promise((resolve) => {
             // Show piece preview
-            this._controls.setSelectedPiece(piece);
+            if (piece && piece.type) {
+                this._controls.selectPiece(piece.type);
+            }
             this._board.showPreview(piece, row, col);
 
             // Wait for duration

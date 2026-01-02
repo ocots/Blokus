@@ -81,9 +81,17 @@ export class PlayerStateMachine extends StateMachine {
 
     /**
      * Deactivate player (return to idle)
+     * Safe to call multiple times - only transitions if valid
      */
     deactivate() {
-        this.transitionTo(PlayerState.IDLE);
+        // Only transition if we're not already idle or finished
+        if (this.state !== PlayerState.IDLE && this.state !== PlayerState.FINISHED) {
+            if (this.canTransitionTo(PlayerState.IDLE)) {
+                this.transitionTo(PlayerState.IDLE);
+            } else {
+                console.warn(`Cannot deactivate player from state: ${this.state}`);
+            }
+        }
     }
 
     /**

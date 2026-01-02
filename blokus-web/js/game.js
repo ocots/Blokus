@@ -458,7 +458,11 @@ export class Game {
             const aiController = this._aiControllers.get(playerId);
             const gameContext = this._createGameContext(playerId);
             
-            aiController.executeTurn(gameContext, playerState);
+            // Don't await here - let AI execute asynchronously
+            // The AI will call playMove/passTurn which will trigger _nextTurn
+            aiController.executeTurn(gameContext, playerState).catch(err => {
+                console.error(`🤖 Unhandled error in AI turn for player ${playerId}:`, err);
+            });
         } else {
             // Human player - activate state
             playerState.activate();
