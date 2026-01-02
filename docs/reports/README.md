@@ -11,6 +11,9 @@ This directory contains session reports, action plans, and project proposals.
 | Document | Date | Description |
 |----------|------|-------------|
 | [2026-01-01 Session Summary](2026-01-01_session_summary.md) | 2026-01-01 | Complete session report: Player Architecture + Documentation Overhaul |
+| [Test Coverage Report](test_coverage_report.md) | 2026-01-02 | Analyse de la couverture de tests (~85%) et tests manquants |
+| [MyPy Analysis Report](mypy_analysis_report.md) | 2026-01-02 | Analyse statique des types (73 erreurs détectées, 19 corrigées) |
+| [Test Coverage Final Report](test_coverage_final_report.md) | 2026-01-02 | Rapport consolidé tests + MyPy avec métriques avant/après |
 
 ### Action Plans
 

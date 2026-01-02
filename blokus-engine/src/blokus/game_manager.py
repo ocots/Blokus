@@ -30,7 +30,7 @@ class GameManager:
     turn_history: List[int] = field(default_factory=list)
     game_finished: bool = False
     
-    def __init__(self, players: List[Player] = None, starting_player_index: int = 0):
+    def __init__(self, players: List[Player] | None = None, starting_player_index: int = 0) -> None:
         """
         Initialize GameManager.
         
@@ -157,7 +157,7 @@ class GameManager:
         self.game_finished = True
         return self.players[self.current_player_index]
     
-    def set_starting_player(self, player_id: int):
+    def set_starting_player(self, player_id: int) -> None:
         """
         Set starting player by ID.
         
@@ -182,7 +182,7 @@ class GameManager:
         
         raise ValueError(f"Player with ID {player_id} not found")
     
-    def set_starting_player_by_index(self, index: int):
+    def set_starting_player_by_index(self, index: int) -> None:
         """
         Set starting player by index.
         
@@ -202,7 +202,7 @@ class GameManager:
         self.current_player.status = PlayerStatus.PLAYING
         self.turn_history = []
     
-    def force_pass_turn(self):
+    def force_pass_turn(self) -> None:
         """Force current player to pass their turn."""
         self.current_player.pass_turn()
         self.next_turn()
@@ -244,7 +244,7 @@ class GameManager:
         """
         return sorted(self.players, key=lambda p: p.score, reverse=True)
     
-    def get_players_by_type(self, player_type) -> List[Player]:
+    def get_players_by_type(self, player_type: Any) -> List[Player]:
         """
         Get players of specific type.
         
@@ -346,7 +346,7 @@ class GameManager:
         """Access player by index."""
         return self.players[index]
     
-    def __iter__(self):
+    def __iter__(self) -> Any:
         """Iterate over players in play order."""
         return iter(self.players)
     

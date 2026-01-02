@@ -4,9 +4,9 @@ description: Python testing workflow for Blokus project
 
 # Python Testing Workflow
 
-**Version**: 3.0  
+**Version**: 4.0  
 **Last Updated**: 2026-01-02  
-**Goal**: Run and maintain Python tests for Blokus project
+**Goal**: Run and maintain Python tests for Blokus project with type safety and property-based testing
 
 ## 📋 What This Workflow Does
 
@@ -37,6 +37,14 @@ source .venv/bin/activate && python -m pytest tests/ -v --tb=short
 
 # Check coverage
 source .venv/bin/activate && python -m pytest tests/ --cov=src/blokus --cov-report=term-missing
+
+# Type checking (critical for preventing bugs)
+source .venv/bin/activate && mypy src/blokus --strict
+
+# Run specific test suites
+source .venv/bin/activate && python -m pytest tests/test_corner_cases.py -v  # Defensive tests
+source .venv/bin/activate && python -m pytest tests/rl/test_obs_validity.py -v  # RL content validation
+source .venv/bin/activate && python -m pytest tests/test_property_based.py -v  # Property-based tests
 ```
 
 ## 🔄 Méthodologie TDD
@@ -152,8 +160,46 @@ tests/
 2. **Logic Tests**: Test business logic
 3. **Result Tests**: Test outputs
 4. **Integration Tests**: Test module interactions
+5. **Defensive Tests** (`test_corner_cases.py`): Test invalid inputs, edge cases
+6. **RL Content Tests** (`rl/test_obs_validity.py`): Verify observation tensor content
+7. **Property-Based Tests** (`test_property_based.py`): Test invariants with Hypothesis
 
 *See testing manual for examples and patterns*
+
+## 🛡️ New Test Categories (v4.0)
+
+### Defensive Tests
+
+**File**: `tests/test_corner_cases.py`  
+**Purpose**: Prevent crashes from invalid inputs
+
+- Invalid/None inputs
+- Out-of-bounds coordinates
+- Configuration mismatches
+- Corrupted JSON deserialization
+- Complex game states (full board, all passed)
+
+### RL Content Validation
+
+**File**: `tests/rl/test_obs_validity.py`  
+**Purpose**: Ensure RL observations contain correct data
+
+- Channel content verification (not just shape)
+- Piece placement accuracy
+- Available pieces flags
+- First move flags
+- No NaN/Inf values
+
+### Property-Based Tests
+
+**File**: `tests/test_property_based.py`  
+**Purpose**: Test invariants under random scenarios
+
+- Game never crashes with valid inputs
+- Scores stay in valid range [-89, 20]
+- Pieces count decreases monotonically
+- Board cells never overlap
+- Game copy is independent
 
 ## ⚡ Quality Standards
 

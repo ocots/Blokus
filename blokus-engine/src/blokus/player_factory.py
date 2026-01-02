@@ -32,7 +32,7 @@ class PlayerFactory:
     ]
     
     @classmethod
-    def create_human_player(cls, id: int, name: str, color: str = None) -> Player:
+    def create_human_player(cls, id: int, name: str, color: str | None = None) -> Player:
         """
         Create a human player.
         
@@ -55,7 +55,7 @@ class PlayerFactory:
         )
     
     @classmethod
-    def create_ai_player(cls, id: int, persona: str, color: str = None) -> Player:
+    def create_ai_player(cls, id: int, persona: str, color: str | None = None) -> Player:
         """
         Create an AI player.
         
@@ -86,7 +86,7 @@ class PlayerFactory:
         )
     
     @classmethod
-    def create_shared_player(cls, id: int, color: str = None) -> Player:
+    def create_shared_player(cls, id: int, color: str | None = None) -> Player:
         """
         Create a shared player (for 3-player games).
         
@@ -122,7 +122,7 @@ class PlayerFactory:
         Raises:
             ValueError: If unknown player type
         """
-        players = []
+        players: list[Player] = []
         
         for config in player_configs:
             player_type = config.get("type", "human")

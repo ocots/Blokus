@@ -114,7 +114,7 @@ class GameManagerFactory:
         cls,
         num_humans: int,
         num_ais: int,
-        ai_personas: List[str] = None,
+        ai_personas: List[str] | None = None,
         starting_player_id: int = 0
     ) -> GameManager:
         """
