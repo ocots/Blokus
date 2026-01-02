@@ -8,6 +8,7 @@
  */
 
 import { PlayerState } from '../state/player-state.js';
+import { AIAnimator } from './ai-animator.js';
 
 /**
  * AI Controller
@@ -17,9 +18,11 @@ export class AIController {
     /**
      * Create AI controller
      * @param {AIStrategy} aiStrategy - AI strategy instance (dependency injection)
+     * @param {AIAnimator|null} animator - Optional animator for visual feedback
      */
-    constructor(aiStrategy) {
+    constructor(aiStrategy, animator = null) {
         this._strategy = aiStrategy;
+        this._animator = animator;
         this._isExecuting = false;
     }
 
@@ -41,6 +44,11 @@ export class AIController {
             // Transition to thinking state
             playerState.startAIThinking();
             
+            // Show thinking indicator if animator available
+            if (this._animator) {
+                this._animator.showThinkingIndicator(gameContext.playerId);
+            }
+            
             // Simulate thinking delay (1-3 seconds)
             const delay = 1000 + Math.random() * 2000;
             console.log(`🤖 AI Player ${gameContext.playerId} thinking... (${Math.round(delay)}ms)`);
@@ -54,10 +62,26 @@ export class AIController {
             
             if (move) {
                 console.log(`🤖 AI plays: ${move.piece.type} at (${move.row}, ${move.col})`);
+                
+                // Animate piece placement if animator available
+                if (this._animator) {
+                    await this._animator.animateThinking(move.piece, move.row, move.col, 400);
+                }
+                
                 await gameContext.playMove(move.piece, move.row, move.col);
+                
+                // Animate placement confirmation
+                if (this._animator) {
+                    await this._animator.animatePlacement(move.piece, move.row, move.col);
+                }
             } else {
                 console.log(`🤖 AI Player ${gameContext.playerId} has no valid moves, passing...`);
                 await gameContext.passTurn();
+            }
+            
+            // Hide thinking indicator
+            if (this._animator) {
+                this._animator.hideThinkingIndicator(gameContext.playerId);
             }
             
             // Deactivate player
@@ -65,6 +89,11 @@ export class AIController {
             
         } catch (error) {
             console.error('AI turn failed:', error);
+            
+            // Hide thinking indicator on error
+            if (this._animator) {
+                this._animator.hideThinkingIndicator(gameContext.playerId);
+            }
             
             // Fallback: pass turn
             try {

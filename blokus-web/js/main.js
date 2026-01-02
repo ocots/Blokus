@@ -10,6 +10,7 @@ import { Game } from './game.js';
 import { SetupManager } from './setup.js';
 import { AppStateManager, APP_STATE } from './state.js';
 import * as api from './api.js';
+import { initAIAnimationStyles } from './ai/ai-animator.js';
 
 /** @type {Game|null} */
 let game = null;
@@ -32,6 +33,9 @@ export function getGame() {
  */
 async function initApp() {
     console.log('🎮 Initializing Blokus App...');
+
+    // Initialize AI animation styles
+    initAIAnimationStyles();
 
     // Initialize State Manager
     stateManager = new AppStateManager();

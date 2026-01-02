@@ -164,7 +164,12 @@ export class Game {
 
             // Setup AI controller if player is AI
             if (this._isAIPlayer(i)) {
-                const aiController = AIFactory.createController(this._useApi, this._apiClient);
+                const aiController = AIFactory.createController(
+                    this._useApi, 
+                    this._apiClient,
+                    this._board,
+                    this._controls
+                );
                 this._aiControllers.set(i, aiController);
             }
         }
