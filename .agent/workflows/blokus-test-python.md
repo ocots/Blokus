@@ -1,216 +1,125 @@
 ---
-description: Interactive Python testing workflow with feedback loop
+description: Python testing workflow for Blokus project
 ---
 
-# Python Unit Test Workflow
+# Python Testing Workflow
 
-**Version**: 2.0  
+**Version**: 3.0  
 **Last Updated**: 2026-01-02  
-**Goal**: Run tests, diagnose failures, fix issues in a feedback loop until all tests pass.
+**Goal**: Run and maintain Python tests for Blokus project
 
-**Updates v2.0**:
-- Ajout tests pour factories (PlayerFactory, GameManagerFactory)
-- Tests pour machines à états (PlayerStatus, GameStatus)
-- Tests d'intégration API
-- Patterns de test pour SOLID compliance
+## 📋 What This Workflow Does
 
-## Hard Rules
+- ✅ Run all Python tests
+- ✅ Diagnose and fix test failures
+- ✅ Ensure test quality and coverage
+- ✅ Maintain SOLID compliance
 
-1. **Always run tests from the virtual environment**
-   ```bash
-   source .venv/bin/activate && python -m pytest tests/ -v
-   ```
+## 📚 Required Reading
 
-2. **One test file per module** (when it makes sense)
-   - `src/blokus/pieces.py` → `tests/test_pieces.py`
-   - `src/blokus/player.py` → `tests/test_player.py`
-   - `src/blokus/player_factory.py` → `tests/test_player_factory.py`
-   - `src/blokus/game_manager.py` → `tests/test_game_manager.py`
+**Before using this workflow, read**: `@[.agent/workflows/testing-manual.md]`
 
-3. **Clear test organization**
-   - Use `class TestFeatureName:` to group related tests
-   - Descriptive test names: `test_<what>_<condition>_<expected>`
-   - Test SOLID principles (especially SRP and OCP)
+This manual contains:
+- Complete testing philosophy
+- All test types with examples
+- Quality standards
+- Best practices
+- Debugging techniques
 
-## Workflow Steps
+## 🎯 Quick Start
 
-### 1) Run all tests
+```bash
+# Run all tests
+source .venv/bin/activate && python -m pytest tests/ -v --tb=short
+
+# Check coverage
+source .venv/bin/activate && python -m pytest tests/ --cov=src/blokus --cov-report=term-missing
+```
+
+## 🔄 Workflow Steps
+
+### 1) Run Tests
 
 ```bash
 // turbo
 source .venv/bin/activate && python -m pytest tests/ -v --tb=short
 ```
 
-### 2) If tests fail, diagnose
+### 2) Analyze Results
+
+- ✅ **All pass**: Great! Continue development
+- ❌ **Failures**: Diagnose and fix
+
+### 3) Fix Issues
 
 For each failing test:
 1. Read the assertion error
-2. Read the relevant source code
-3. Determine if it's a test bug or code bug
+2. Check the testing manual for patterns
+3. Fix code or test
+4. Re-run tests
 
-### 3) Fix the issue
-
-- If **test bug**: Update the test expectation
-- If **code bug**: Fix the source code
-
-### 4) Re-run tests
-
-```bash
-// turbo
-source .venv/bin/activate && python -m pytest tests/ -v --tb=short
-```
-
-### 5) Repeat until all pass
-
-Continue the diagnose → fix → test loop until:
-- ✅ All tests pass
-- 📊 Coverage is acceptable (>80% recommended)
-
-### 6) Optional: Check coverage
+### 4) Verify Coverage
 
 ```bash
 source .venv/bin/activate && python -m pytest tests/ --cov=src/blokus --cov-report=term-missing
 ```
 
-### 7) Optional: Type checking
+**Required coverage**:
+- Core modules: >95%
+- Overall: >90%
+
+## 📁 Test Organization
+
+```
+tests/
+├── unit/                    # Unit tests
+├── integration/             # Integration tests
+├── e2e/                     # E2E tests (optional)
+└── fixtures/                # Test data
+```
+
+## 🎯 Test Types Required
+
+1. **Unit Tests**: Test individual methods
+2. **Logic Tests**: Test business logic
+3. **Result Tests**: Test outputs
+4. **Integration Tests**: Test module interactions
+
+*See testing manual for examples and patterns*
+
+## ⚡ Quality Standards
+
+- **Coverage**: >90% overall
+- **Speed**: Tests should be fast
+- **Clarity**: Descriptive test names
+- **Independence**: No test dependencies
+
+## 🛑️ When to Stop
+
+1. ✅ All tests pass
+2. ✅ Coverage meets requirements
+3. ✅ No critical failures
+4. ✅ Code quality maintained
+
+## 🔧 Optional Commands
 
 ```bash
+# Type checking
 source .venv/bin/activate && mypy src/
-```
 
-### 8) Optional: Linting
-
-```bash
+# Linting
 source .venv/bin/activate && ruff check src/
+
+# Run specific test
+source .venv/bin/activate && python -m pytest tests/test_game_manager.py -v
 ```
 
-## Stop Points
+## 📖 References
 
-1. After initial test run (report status)
-2. If >5 tests fail (ask for guidance)
-3. Before making major code changes
-4. When all tests pass (report success)
+- **Testing Manual**: `@[.agent/workflows/testing-manual.md]`
+- **Test Coverage Analysis**: `../docs/reports/test-types-analysis.md`
+- **Test Implementation**: `../docs/reports/final-test-summary.md`
 
-## Testing Patterns for SOLID Architecture
+---
 
-### Testing Factories (OCP)
-
-```python
-# tests/test_player_factory.py
-from blokus.player_factory import PlayerFactory
-from blokus.player_types import PlayerType
-
-class TestPlayerFactory:
-    def test_create_human_player(self):
-        player = PlayerFactory.create_human(0, "Alice")
-        assert player.type == PlayerType.HUMAN
-        assert player.name == "Alice"
-    
-    def test_create_ai_player_with_persona(self):
-        player = PlayerFactory.create_ai(1, "random")
-        assert player.type == PlayerType.AI
-        assert player.persona == "random"
-    
-    def test_factory_creates_valid_players(self):
-        # Test that factory respects contracts
-        player = PlayerFactory.create_human(0, "Test")
-        assert hasattr(player, 'id')
-        assert hasattr(player, 'remaining_pieces')
-```
-
-### Testing State Machines
-
-```python
-# tests/test_player_state_machine.py
-from blokus.player_types import PlayerStatus
-
-class TestPlayerStateMachine:
-    def test_valid_state_transitions(self):
-        player = create_test_player()
-        
-        # Valid transition
-        player.status = PlayerStatus.ACTIVE
-        assert player.status == PlayerStatus.ACTIVE
-    
-    def test_invalid_state_transitions_raise_error(self):
-        player = create_test_player()
-        player.status = PlayerStatus.PASSED
-        
-        # Cannot go from PASSED to ACTIVE
-        with pytest.raises(ValueError):
-            player.status = PlayerStatus.ACTIVE
-```
-
-### Testing Strategy Pattern (AI)
-
-```python
-# tests/test_ai_strategies.py
-class TestAIStrategies:
-    def test_random_strategy_returns_valid_move(self):
-        strategy = RandomAIStrategy()
-        game = create_test_game()
-        
-        move = strategy.get_move(game)
-        
-        assert move is not None
-        assert game.is_valid_move(move)
-    
-    def test_strategy_returns_none_when_no_moves(self):
-        strategy = RandomAIStrategy()
-        game = create_game_with_no_valid_moves()
-        
-        move = strategy.get_move(game)
-        
-        assert move is None
-```
-
-### Testing Dependency Injection (DIP)
-
-```python
-# tests/test_game_with_mocks.py
-class TestGameWithDependencyInjection:
-    def test_game_with_mock_api_client(self):
-        mock_api = Mock()
-        mock_api.get_ai_suggestion.return_value = {"move": test_move}
-        
-        game = Game(board, controls, config, apiClient=mock_api)
-        
-        # Test that game uses injected dependency
-        game.execute_ai_move()
-        mock_api.get_ai_suggestion.assert_called_once()
-```
-
-### Integration Tests
-
-```python
-# tests/test_api_integration.py
-from fastapi.testclient import TestClient
-from blokus_server.main import app
-
-class TestAPIIntegration:
-    def test_create_game_with_ai_players(self):
-        client = TestClient(app)
-        
-        response = client.post("/game/new", json={
-            "num_players": 2,
-            "players": [
-                {"name": "Human", "type": "human"},
-                {"name": "AI", "type": "ai", "persona": "random"}
-            ]
-        })
-        
-        assert response.status_code == 200
-        assert len(response.json()["players"]) == 2
-```
-
-## Coverage Goals
-
-- **Core modules**: > 95% (pieces, board, rules, game)
-- **Factories**: > 90% (player_factory, game_manager_factory)
-- **State machines**: 100% (all transitions tested)
-- **API**: > 85% (all endpoints + error cases)
-- **Overall**: > 90%
-
-## Philosophy
-
-Test first • Clear assertions • Minimal fixtures • Fast feedback • SOLID compliance
+**Remember**: Tests are documentation. Keep them clean and meaningful.
