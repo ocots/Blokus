@@ -96,7 +96,15 @@ export class AIController {
             playerState.deactivate();
             
         } catch (error) {
-            console.error('AI turn failed:', error);
+            console.error('🤖 AI turn failed:', error);
+            console.error('Error message:', error.message);
+            console.error('Error stack:', error.stack);
+            console.error('Current state:', playerState.state);
+            console.error('Game context:', {
+                playerId: gameContext.playerId,
+                hasPlayMove: typeof gameContext.playMove,
+                hasPassTurn: typeof gameContext.passTurn
+            });
             
             // Hide thinking indicator on error
             if (this._animator) {
@@ -105,10 +113,16 @@ export class AIController {
             
             // Fallback: pass turn
             try {
-                await gameContext.passTurn();
+                console.log(`🤖 AI ${gameContext.playerId}: Attempting fallback pass turn...`);
+                const passResult = gameContext.passTurn();
+                console.log(`🤖 AI ${gameContext.playerId}: Pass turn result:`, passResult);
+                if (passResult instanceof Promise) {
+                    await passResult;
+                }
                 playerState.deactivate();
             } catch (passError) {
-                console.error('Failed to pass turn:', passError);
+                console.error('🤖 Failed to pass turn:', passError);
+                console.error('Pass error message:', passError.message);
             }
         } finally {
             this._isExecuting = false;
