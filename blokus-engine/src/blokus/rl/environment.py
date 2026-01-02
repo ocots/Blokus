@@ -186,6 +186,25 @@ class BlokusEnv(gym.Env):
         if self.game is None:
             raise RuntimeError("Environment not initialized. Call reset() first.")
         
+        # Check if there are any valid actions
+        valid_moves = self.game.get_valid_moves()
+        if len(valid_moves) == 0:
+            # No valid moves: force pass and continue
+            self.game.force_pass()
+            self.step_count += 1
+            
+            # Check if game is now finished
+            terminated = self.game.status == GameStatus.FINISHED
+            truncated = self.step_count >= self.config.max_steps
+            
+            return (
+                self._get_obs(),
+                0.0,  # Neutral reward for forced pass
+                terminated,
+                truncated,
+                {"valid_action": True, "forced_pass": True, "winner": self.game.get_winner() if terminated else None}
+            )
+        
         # Store previous state for reward computation
         game_before = self.game.copy()
         

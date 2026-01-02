@@ -148,13 +148,17 @@ class DQNAgent(Agent):
             deterministic: If True, always use greedy action
             
         Returns:
-            Selected action index
+            Selected action index, or 0 if no valid actions
         """
+        valid_actions = np.where(action_mask)[0]
+        if len(valid_actions) == 0:
+            # No valid actions: return 0 (will trigger forced pass in environment)
+            return 0
+        
         epsilon = 0.0 if deterministic else self.epsilon
         
         if random.random() < epsilon:
             # Random valid action
-            valid_actions = np.where(action_mask)[0]
             return int(np.random.choice(valid_actions))
         
         # Greedy action

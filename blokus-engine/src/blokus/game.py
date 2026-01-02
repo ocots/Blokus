@@ -127,6 +127,10 @@ class Game:
     
     def is_valid_move(self, move: Move) -> bool:
         """Check if a move is valid."""
+        # Validate player_id
+        if move.player_id < 0 or move.player_id >= len(self.players):
+            return False
+        
         player = self.players[move.player_id]
         
         # Check piece is available

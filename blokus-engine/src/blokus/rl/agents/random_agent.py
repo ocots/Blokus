@@ -39,11 +39,12 @@ class RandomAgent(Agent):
             deterministic: Ignored (random is always stochastic)
             
         Returns:
-            Randomly selected valid action
+            Randomly selected valid action, or 0 if no valid actions
         """
         valid_actions = np.where(action_mask)[0]
         if len(valid_actions) == 0:
-            raise ValueError("No valid actions available")
+            # No valid actions: return 0 (will trigger forced pass in environment)
+            return 0
         return int(self.rng.choice(valid_actions))
     
     def reset(self) -> None:

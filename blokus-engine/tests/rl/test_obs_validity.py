@@ -66,8 +66,8 @@ class TestObservationContent:
         game = Game(num_players=2)
         
         # Place I2 (domino) at (0,0) for player 0
-        # I2 occupies (0,0) and (0,1)
-        move = Move(player_id=0, piece_type=PieceType.I2, orientation=0, row=0, col=0)
+        # I2 orientation 1 is horizontal: occupies (0,0) and (0,1)
+        move = Move(player_id=0, piece_type=PieceType.I2, orientation=1, row=0, col=0)
         game.play_move(move)
         
         obs = create_observation(game)
@@ -78,14 +78,14 @@ class TestObservationContent:
         assert obs[:, :, 0].sum() == 2.0, "Exactly 2 cells should be occupied"
     
     def test_available_pieces_channels(self):
-        """Channels 4-24 should indicate available pieces."""
+        """Channels 17-37 should indicate available pieces for current player."""
         game = Game(num_players=2)
         obs = create_observation(game)
         
-        # Initially, all pieces should be available (channels 4-24 for player 0)
+        # Initially, all pieces should be available (channels 17-37 for current player)
         # Each piece channel should be all 1s if available
         for piece_idx in range(21):
-            channel_idx = 4 + piece_idx
+            channel_idx = 17 + piece_idx
             # Available piece = all cells set to 1
             assert obs[0, 0, channel_idx] == 1.0, f"Piece {piece_idx} should be available"
     
@@ -97,15 +97,17 @@ class TestObservationContent:
         move = Move(player_id=0, piece_type=PieceType.I1, orientation=0, row=0, col=0)
         game.play_move(move)
         
-        obs = create_observation(game)
+        # Observation from perspective of player 1 (current player after move)
+        obs = create_observation(game, perspective_player=1)
         
-        # I1 channel (channel 4 for player 0) should now be 0
-        i1_channel_idx = 4 + list(PieceType).index(PieceType.I1)
-        assert obs[0, 0, i1_channel_idx] == 0.0, "I1 should no longer be available"
+        # For player 1, I1 should still be available (they haven't played it)
+        i1_channel_idx = 17 + list(PieceType).index(PieceType.I1)
+        assert obs[0, 0, i1_channel_idx] == 1.0, "I1 should be available for player 1"
         
-        # Other pieces should still be available
-        i2_channel_idx = 4 + list(PieceType).index(PieceType.I2)
-        assert obs[0, 0, i2_channel_idx] == 1.0, "I2 should still be available"
+        # Check from player 0's perspective
+        obs0 = create_observation(game, perspective_player=0)
+        i1_channel_idx = 17 + list(PieceType).index(PieceType.I1)
+        assert obs0[0, 0, i1_channel_idx] == 0.0, "I1 should no longer be available for player 0"
     
     def test_first_move_flags(self):
         """Channels 42-45 should indicate first move status."""
