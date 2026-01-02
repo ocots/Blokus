@@ -6,6 +6,8 @@
 
 import { PIECES, getPiece, getAllPieceTypes, PieceType } from './pieces.js';
 import { DUO_STARTING_CORNERS, STARTING_CORNERS } from './board.js';
+import { PlayerStateMachine } from './state/player-state.js';
+import { AIFactory } from './ai/ai-factory.js';
 
 /**
  * Game class manages the overall game state.
@@ -37,6 +39,10 @@ export class Game {
         this._moveHistory = [];
         this._gameOver = false;
         this._useApi = apiClient !== null;
+
+        // State machines and AI controllers (SOLID architecture)
+        this._playerStates = [];
+        this._aiControllers = new Map();
 
         // Inject game reference into dependencies
         this._board.setGame(this);
@@ -148,6 +154,21 @@ export class Game {
         this._moveHistory = [];
         this._gameOver = false;
 
+        // Initialize state machines for each player
+        this._playerStates = [];
+        this._aiControllers.clear();
+        
+        for (let i = 0; i < this._numPlayers; i++) {
+            const stateMachine = new PlayerStateMachine();
+            this._playerStates.push(stateMachine);
+
+            // Setup AI controller if player is AI
+            if (this._isAIPlayer(i)) {
+                const aiController = AIFactory.createController(this._useApi, this._apiClient);
+                this._aiControllers.set(i, aiController);
+            }
+        }
+
         this._updateUI();
 
         // Apply settings
@@ -155,10 +176,8 @@ export class Game {
             this._board.setColorblindMode(true);
         }
         
-        // Check if starting player is AI and trigger auto-play
-        if (this._isAIPlayer(this._currentPlayer)) {
-            this._scheduleAIMove();
-        }
+        // Start first turn (will trigger AI if needed)
+        this._startTurn(this._currentPlayer);
     }
 
     /**
@@ -410,10 +429,57 @@ export class Game {
     }
 
     /**
+     * Start a player's turn (new SOLID architecture)
+     * @param {number} playerId - Player ID
+     * @private
+     */
+    _startTurn(playerId) {
+        const playerState = this._playerStates[playerId];
+
+        if (this._isAIPlayer(playerId)) {
+            // AI player - use AI controller
+            const aiController = this._aiControllers.get(playerId);
+            const gameContext = this._createGameContext(playerId);
+            
+            aiController.executeTurn(gameContext, playerState);
+        } else {
+            // Human player - activate state
+            playerState.activate();
+        }
+
+        this._updateUI();
+    }
+
+    /**
+     * Create game context for AI strategies
+     * @param {number} playerId - Player ID
+     * @returns {Object} Game context
+     * @private
+     */
+    _createGameContext(playerId) {
+        return {
+            playerId,
+            players: this._players,
+            board: this._board,
+            isFirstMove: (pid) => this.isFirstMove(pid),
+            hasValidMove: (pid) => this._hasValidMove(pid),
+            getPieces: (type) => PIECES[type],
+            getPiece: (type, orientation) => getPiece(type, orientation),
+            playMove: (piece, row, col) => this.playMove(piece, row, col),
+            passTurn: () => this.passTurn()
+        };
+    }
+
+    /**
      * Advance to next turn
      * @private
      */
     _nextTurn() {
+        // Deactivate current player
+        if (this._playerStates[this._currentPlayer]) {
+            this._playerStates[this._currentPlayer].deactivate();
+        }
+
         // Check if game over
         if (this._checkGameOver()) {
             this._gameOver = true;
@@ -443,15 +509,13 @@ export class Game {
         if (attempts >= this._numPlayers) {
             this._gameOver = true;
             this._showGameOver();
+            return;
         }
 
-        this._updateUI();
         this.save();
         
-        // Check if next player is AI and trigger auto-play
-        if (!this._gameOver && this._isAIPlayer(this._currentPlayer)) {
-            this._scheduleAIMove();
-        }
+        // Start next turn using new architecture
+        this._startTurn(this._currentPlayer);
     }
 
     /**
@@ -481,120 +545,6 @@ export class Game {
      */
     _getCurrentPlayerConfig() {
         return this._config.players?.[this._currentPlayer];
-    }
-
-    /**
-     * Schedule AI move with random delay
-     * @private
-     */
-    _scheduleAIMove() {
-        // Random delay between 1-3 seconds to simulate thinking
-        const delay = 1000 + Math.random() * 2000;
-        
-        console.log(`🤖 AI Player ${this._currentPlayer} thinking... (${Math.round(delay)}ms)`);
-        
-        setTimeout(() => {
-            this._executeAIMove();
-        }, delay);
-    }
-
-    /**
-     * Execute AI move (local or API mode)
-     * @private
-     */
-    async _executeAIMove() {
-        if (this._gameOver) return;
-        
-        const playerId = this._currentPlayer;
-        
-        // Check if AI has valid moves
-        if (!this._hasValidMove(playerId)) {
-            console.log(`🤖 AI Player ${playerId} has no valid moves, passing...`);
-            this.passTurn();
-            return;
-        }
-        
-        // Get AI move
-        if (this._useApi) {
-            await this._executeAIMoveFromAPI();
-        } else {
-            await this._executeAIMoveLocal();
-        }
-    }
-
-    /**
-     * Execute AI move using API
-     * @private
-     */
-    async _executeAIMoveFromAPI() {
-        try {
-            const response = await this._apiClient.getAISuggestedMove();
-            
-            if (response.success && response.move) {
-                const { piece_type, orientation, row, col } = response.move;
-                
-                // Get piece object
-                const piece = getPiece(piece_type, orientation);
-                
-                console.log(`🤖 AI plays: ${piece_type} at (${row}, ${col})`);
-                
-                // Execute move
-                await this.playMove(piece, row, col);
-            } else {
-                console.warn('AI returned no move, passing...');
-                this.passTurn();
-            }
-        } catch (err) {
-            console.error('AI move failed:', err);
-            this.passTurn();
-        }
-    }
-
-    /**
-     * Execute AI move locally (simple random AI)
-     * @private
-     */
-    async _executeAIMoveLocal() {
-        const playerId = this._currentPlayer;
-        const player = this._players[playerId];
-        const isFirst = this.isFirstMove(playerId);
-        
-        // Simple random AI: try pieces in random order
-        const pieces = Array.from(player.remainingPieces);
-        
-        // Shuffle pieces
-        for (let i = pieces.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [pieces[i], pieces[j]] = [pieces[j], pieces[i]];
-        }
-        
-        // Try each piece
-        for (const type of pieces) {
-            for (const piece of PIECES[type]) {
-                const corners = this._board.getPlayerCorners(playerId);
-                
-                // Shuffle corners for randomness
-                const shuffledCorners = corners.sort(() => Math.random() - 0.5);
-                
-                for (const [cr, cc] of shuffledCorners) {
-                    for (const [pr, pc] of piece.coords) {
-                        const row = cr - pr;
-                        const col = cc - pc;
-                        
-                        if (this._board.isValidPlacement(piece, row, col, playerId, isFirst)) {
-                            // Found valid move!
-                            console.log(`🤖 AI plays: ${type} at (${row}, ${col})`);
-                            this.playMove(piece, row, col);
-                            return;
-                        }
-                    }
-                }
-            }
-        }
-        
-        // No valid move found
-        console.log(`🤖 AI Player ${playerId} found no valid moves, passing...`);
-        this.passTurn();
     }
 
     /**
