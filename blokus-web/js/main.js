@@ -11,6 +11,7 @@ import { SetupManager } from './setup.js';
 import { AppStateManager, APP_STATE } from './state.js';
 import * as api from './api.js';
 import { initAIAnimationStyles } from './ai/ai-animator.js';
+import { VERSION, logVersion } from './version.js';
 
 /** @type {Game|null} */
 let game = null;
@@ -32,7 +33,9 @@ export function getGame() {
  * Initialize the application
  */
 async function initApp() {
-    console.log('🎮 Initializing Blokus App...');
+    // Log version info first
+    logVersion();
+    console.log(`${VERSION.getLogPrefix()} 🎮 Initializing Blokus App...`);
 
     // Initialize AI animation styles
     initAIAnimationStyles();
@@ -113,12 +116,12 @@ async function initApp() {
     try {
         isApiAvailable = await api.isServerAvailable();
         if (isApiAvailable) {
-            console.log('🌐 API server detected at', api.getBaseUrl());
+            console.log(`${VERSION.getLogPrefix()} 🌐 API server detected at ${api.getBaseUrl()}`);
         } else {
-            console.log('📴 API server not available, using local mode');
+            console.log(`${VERSION.getLogPrefix()} 📴 API server not available, using local mode`);
         }
     } catch (err) {
-        console.log('📴 API check failed, using local mode:', err.message);
+        console.log(`${VERSION.getLogPrefix()} 📴 API check failed, using local mode: ${err.message}`);
     }
 
     // Initialize Setup Manager
@@ -135,7 +138,7 @@ async function initApp() {
  */
 async function resumeGame(json) {
     const data = JSON.parse(json);
-    console.log('🔄 Resuming game...', data.config);
+    console.log(`${VERSION.getLogPrefix()} 🔄 Resuming game...`, data.config);
 
     // Create board
     const board = new Board('game-board');
@@ -150,9 +153,9 @@ async function resumeGame(json) {
     const success = game.deserialize(json);
 
     if (success) {
-        console.log('✅ Game successfully resumed');
+        console.log(`${VERSION.getLogPrefix()} ✅ Game successfully resumed`);
     } else {
-        console.error('❌ Failed to resume game');
+        console.error(`${VERSION.getLogPrefix()} ❌ Failed to resume game`);
         alert('Erreur lors du chargement de la sauvegarde.');
         localStorage.removeItem('blokus_save');
         window.location.reload();
@@ -165,11 +168,11 @@ async function resumeGame(json) {
  * @param {boolean} isApiAvailable - Whether API is available
  */
 async function launchGame(config, isApiAvailable) {
-    console.log('🚀 Launching Game with config:', config);
+    console.log(`${VERSION.getLogPrefix()} 🚀 Launching Game with config:`, config);
 
     // Remove player rotation logic - backend now handles starting player
     // The startPlayer value is passed directly to the backend
-    console.log('📋 Starting player will be:', config.startPlayer);
+    console.log(`${VERSION.getLogPrefix()} 📋 Starting player will be: ${config.startPlayer}`);
 
     // Create board
     const board = new Board('game-board');
@@ -190,7 +193,7 @@ async function launchGame(config, isApiAvailable) {
 
             // Sync initial state
             await game.initFromApi();
-            console.log('✅ Blokus ready (API mode)');
+            console.log(`${VERSION.getLogPrefix()} ✅ Blokus ready (API mode)`);
         } catch (err) {
             console.error('❌ API init failed:', err);
             console.log('↩️ Falling back to local mode');
@@ -198,7 +201,7 @@ async function launchGame(config, isApiAvailable) {
             game = new Game(board, controls, config, null);
         }
     } else {
-        console.log('✅ Blokus ready (local mode)');
+        console.log(`${VERSION.getLogPrefix()} ✅ Blokus ready (local mode)`);
     }
 
     // Initial render
