@@ -23,6 +23,8 @@ jobs:
       run: |
         cd blokus-engine
         python -m pip install --upgrade pip
+        # Install CPU-only torch first to save space
+        pip install torch --index-url https://download.pytorch.org/whl/cpu
         # Install project in editable mode with dev dependencies
         pip install -e ".[dev]"
     
