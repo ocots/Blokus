@@ -52,7 +52,7 @@ export class Game {
         // Settings
         this._settings = config.settings || {};
         if (this._settings.fastMode === undefined) {
-            this._settings.fastMode = true; // Enable fastMode by default for testing
+            this._settings.fastMode = false; // Default to normal speed (with 100ms delay)
         }
         this._sharedTurnControllerIndex = 0;
 
