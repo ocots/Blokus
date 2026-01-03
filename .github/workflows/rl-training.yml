@@ -144,14 +144,7 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
-
-      - name: 📦 Cache pip packages
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ env.PYTHON_VERSION }}-${{ hashFiles('**/blokus-engine/requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-${{ env.PYTHON_VERSION }}-
+          cache: 'pip'
 
       - name: 📦 Install dependencies
         working-directory: blokus-engine
