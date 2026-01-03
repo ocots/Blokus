@@ -359,6 +359,8 @@ def main():
                         help="Evaluation frequency (episodes)")
     parser.add_argument("--eval-games", type=int, default=100,
                         help="Number of games per evaluation")
+    parser.add_argument("--min-buffer", type=int, default=10000,
+                        help="Minimum buffer size before training")
     parser.add_argument("--log-freq", type=int, default=100,
                         help="Logging frequency (episodes)")
     
@@ -385,6 +387,7 @@ def main():
             batch_size=args.batch_size,
             eval_frequency=args.eval_freq,
             eval_games=args.eval_games,
+            min_buffer_size=args.min_buffer,
             use_tensorboard=not args.no_viz,
             record_video=not args.no_video and not args.no_viz,
             models_dir=models_dir
