@@ -347,6 +347,8 @@ def main():
                         help="Batch size")
     parser.add_argument("--eval-freq", type=int, default=1000,
                         help="Evaluation frequency (episodes)")
+    parser.add_argument("--eval-games", type=int, default=100,
+                        help="Number of games per evaluation")
     parser.add_argument("--log-freq", type=int, default=100,
                         help="Logging frequency (episodes)")
     
@@ -372,6 +374,7 @@ def main():
             learning_rate=args.lr,
             batch_size=args.batch_size,
             eval_frequency=args.eval_freq,
+            eval_games=args.eval_games,
             use_tensorboard=not args.no_viz,
             record_video=not args.no_video and not args.no_viz,
             models_dir=models_dir
