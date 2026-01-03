@@ -273,7 +273,10 @@ export class SetupManager {
             playerCount: count,
             players: players,
             startPlayer: startPlayer,
-            twoPlayerMode: (count === 2) ? state.twoPlayerMode : null
+            twoPlayerMode: (count === 2) ? state.twoPlayerMode : null,
+            settings: {
+                colorblindMode: state.colorblindMode
+            }
         };
 
         this.modal.classList.add('hidden');
