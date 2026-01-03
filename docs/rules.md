@@ -157,13 +157,4 @@ X:   ■             Y:   ■              Z: ■ ■
 ### Blokus 2 joueurs (sur plateau standard)
 
 - Chaque joueur contrôle **2 couleurs**
-- Chaque joueur contrôle **2 couleurs**
 - Joue alternativement avec chaque couleur
-
-### Blokus 3 joueurs
-
-- **Configuration** : 3 Joueurs + 1 Couleur Neutre (Partagée).
-- **Règle** : La 4ème couleur est jouée à tour de rôle par chacun des 3 joueurs.
-  - Tour 1 : J1 joue J1, J2 joue J2, J3 joue J3, **J1** joue Neutre.
-  - Tour 2 : J1 joue J1, J2 joue J2, J3 joue J3, **J2** joue Neutre.
-  - Etc.

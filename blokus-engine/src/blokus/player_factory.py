@@ -85,27 +85,6 @@ class PlayerFactory:
             persona=persona
         )
     
-    @classmethod
-    def create_shared_player(cls, id: int, color: str | None = None) -> Player:
-        """
-        Create a shared player (for 3-player games).
-        
-        Args:
-            id: Player ID
-            color: Hex color (optional, uses default if None)
-            
-        Returns:
-            Player instance
-        """
-        if color is None:
-            color = cls.DEFAULT_COLORS[id % len(cls.DEFAULT_COLORS)]
-        
-        return Player(
-            id=id,
-            name="Neutre (Partagé)",
-            color=color,
-            type=PlayerType.SHARED
-        )
     
     @classmethod
     def create_players_from_config(cls, player_configs: List[Dict[str, Any]]) -> List[Player]:
@@ -141,8 +120,6 @@ class PlayerFactory:
                     config.get("persona", "random"),
                     color
                 )
-            elif player_type == "shared":
-                player = cls.create_shared_player(player_id, color)
             else:
                 raise ValueError(f"Unknown player type: {player_type}")
             
@@ -164,8 +141,8 @@ class PlayerFactory:
         Raises:
             ValueError: If num_players is not between 2 and 4
         """
-        if not 2 <= num_players <= 4:
-            raise ValueError(f"num_players must be between 2 and 4, got {num_players}")
+        if num_players not in (2, 4):
+            raise ValueError(f"num_players must be 2 or 4, got {num_players}")
         
         players = []
         for i in range(num_players):

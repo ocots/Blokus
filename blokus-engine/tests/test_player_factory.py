@@ -16,7 +16,6 @@ class TestPlayerFactory:
         assert player.name == "Alice"
         assert player.is_human
         assert not player.is_ai
-        assert not player.is_shared
         assert player.color == "#3b82f6"  # Default color
         assert player.persona is None
     
@@ -35,7 +34,6 @@ class TestPlayerFactory:
         assert player.id == 1
         assert player.is_ai
         assert not player.is_human
-        assert not player.is_shared
         assert player.persona == "random"
         assert player.name == "Bot Aléatoire"
         assert player.color == "#22c55e"  # Default color
@@ -62,22 +60,6 @@ class TestPlayerFactory:
         assert player.name == "Bot unknown"
         assert player.persona == "unknown"
     
-    def test_create_shared_player(self):
-        """Test creating a shared player."""
-        player = PlayerFactory.create_shared_player(3)
-        
-        assert player.id == 3
-        assert player.is_shared
-        assert not player.is_human
-        assert not player.is_ai
-        assert player.name == "Neutre (Partagé)"
-        assert player.color == "#ef4444"  # Default color
-    
-    def test_create_shared_player_with_color(self):
-        """Test creating a shared player with custom color."""
-        player = PlayerFactory.create_shared_player(3, "#ff00ff")
-        
-        assert player.color == "#ff00ff"
     
     def test_default_colors(self):
         """Test default colors are used correctly."""
@@ -162,18 +144,14 @@ class TestPlayerFactory:
     def test_create_standard_players(self):
         """Test creating standard human players."""
         players_2 = PlayerFactory.create_standard_players(2)
-        players_3 = PlayerFactory.create_standard_players(3)
         players_4 = PlayerFactory.create_standard_players(4)
         
         assert len(players_2) == 2
-        assert len(players_3) == 3
         assert len(players_4) == 4
         
         # Check names
         assert players_2[0].name == "Joueur 1"
         assert players_2[1].name == "Joueur 2"
-        
-        assert players_3[2].name == "Joueur 3"
         
         assert players_4[3].name == "Joueur 4"
         
@@ -181,32 +159,18 @@ class TestPlayerFactory:
         for player in players_4:
             assert player.is_human
             assert not player.is_ai
-            assert not player.is_shared
     
     def test_create_standard_players_invalid_count(self):
         """Test creating standard players with invalid count."""
-        with pytest.raises(ValueError, match="num_players must be between 2 and 4"):
+        with pytest.raises(ValueError, match="num_players must be 2 or 4"):
             PlayerFactory.create_standard_players(1)
         
-        with pytest.raises(ValueError, match="num_players must be between 2 and 4"):
+        with pytest.raises(ValueError, match="num_players must be 2 or 4"):
+            PlayerFactory.create_standard_players(3)
+        
+        with pytest.raises(ValueError, match="num_players must be 2 or 4"):
             PlayerFactory.create_standard_players(5)
     
-    def test_create_players_from_config_mixed_types(self):
-        """Test creating players with mixed types including shared."""
-        config = [
-            {"id": 0, "name": "Alice", "type": "human"},
-            {"id": 1, "type": "ai", "persona": "random"},
-            {"id": 2, "type": "shared"}
-        ]
-        
-        players = PlayerFactory.create_players_from_config(config)
-        
-        assert len(players) == 3
-        assert players[0].is_human
-        assert players[1].is_ai
-        assert players[2].is_shared
-        
-        assert players[2].name == "Neutre (Partagé)"
     
     def test_factory_creates_consistent_players(self):
         """Test that factory creates consistent Player instances."""

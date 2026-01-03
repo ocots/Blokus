@@ -400,22 +400,20 @@ class TestGameManagerOrders:
             Player(id=0, name="Alice", color="#3b82f6", type=PlayerType.HUMAN),
             Player(id=1, name="Bot", color="#22c55e", type=PlayerType.AI, persona="random"),
             Player(id=2, name="Charlie", color="#eab308", type=PlayerType.HUMAN),
-            Player(id=3, name="Neutre", color="#ef4444", type=PlayerType.SHARED)
+            Player(id=3, name="Diana", color="#ef4444", type=PlayerType.AI, persona="defensive")
         ]
         manager = GameManager(players)
         
         humans = manager.get_players_by_type(PlayerType.HUMAN)
         ais = manager.get_players_by_type(PlayerType.AI)
-        shared = manager.get_players_by_type(PlayerType.SHARED)
         
         assert len(humans) == 2
-        assert len(ais) == 1
-        assert len(shared) == 1
+        assert len(ais) == 2
         
         assert humans[0].name == "Alice"
         assert humans[1].name == "Charlie"
         assert ais[0].name == "Bot"
-        assert shared[0].name == "Neutre"
+        assert ais[1].name == "Diana"
 
 
 class TestGameManagerState:

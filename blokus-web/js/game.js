@@ -54,7 +54,6 @@ export class Game {
         if (this._settings.fastMode === undefined) {
             this._settings.fastMode = false; // Default to normal speed (with 100ms delay)
         }
-        this._sharedTurnControllerIndex = 0;
 
         this._init();
     }
@@ -347,12 +346,6 @@ export class Game {
         // Next turn
         this._nextTurn();
 
-        // 3-Player Logic
-        if (this._players[playerId].type === 'shared') {
-            this._sharedTurnControllerIndex++;
-            this._updateUI();
-        }
-
         return true;
     }
 
@@ -386,11 +379,6 @@ export class Game {
         this._controls.clearSelection();
         this._nextTurn();
 
-        // 3-Player Logic
-        if (player.type === 'shared') {
-            this._sharedTurnControllerIndex++;
-            this._updateUI();
-        }
         return true;
     }
 
@@ -677,16 +665,6 @@ export class Game {
         const currentPlayer = this._players[this._currentPlayer];
         let displayName = currentPlayer.name;
 
-        // 3-Player Logic: Show controller name
-        if (currentPlayer.type === 'shared') {
-            const controllerId = this._sharedTurnControllerIndex % 3;
-            // Ensure controllerId is valid
-            const controller = this._players[controllerId];
-            if (controller) {
-                displayName = `${currentPlayer.name} (Joué par ${controller.name})`;
-            }
-        }
-
         const playerBadge = document.getElementById('current-player');
         playerBadge.textContent = displayName;
         playerBadge.className = `player-badge player-${this._currentPlayer}`;
@@ -761,7 +739,6 @@ export class Game {
             })),
             moveHistory: this._moveHistory,
             gameOver: this._gameOver,
-            sharedTurnControllerIndex: this._sharedTurnControllerIndex,
             grid: this._board.getGrid(),
             boardSize: this._board.size,
             startingCorners: this._board.startingCorners
@@ -779,7 +756,6 @@ export class Game {
             this._currentPlayer = data.currentPlayer;
             this._moveHistory = data.moveHistory || [];
             this._gameOver = data.gameOver;
-            this._sharedTurnControllerIndex = data.sharedTurnControllerIndex || 0;
 
             // Restore Players
             this._players = data.players.map(p => ({

@@ -31,7 +31,7 @@ class PlayerState(BaseModel):
     id: int
     name: str
     color: str
-    type: str  # 'human', 'ai', 'shared'
+    type: str  # 'human', 'ai'
     persona: Optional[str] = None
     pieces_remaining: List[str]  # List of PieceType names
     pieces_count: int
@@ -64,13 +64,13 @@ class MoveResponse(BaseModel):
 
 class PlayerConfig(BaseModel):
     name: str
-    type: str # 'human', 'ai', 'shared'
+    type: str # 'human', 'ai'
     persona: Optional[str] = None # 'random', 'aggressive', 'defensive', etc.
     
     @field_validator('type')
     @classmethod
     def validate_player_type(cls, v):
-        valid_types = ['human', 'ai', 'shared']
+        valid_types = ['human', 'ai']
         if v not in valid_types:
             raise ValueError(f'player type must be one of {valid_types}')
         return v

@@ -15,7 +15,6 @@ describe('SetupManager', () => {
             <div id="setup-modal" class="modal"></div>
             <div id="players-config"></div>
             <button class="toggle-btn" data-players="2"></button>
-            <button class="toggle-btn" data-players="3"></button>
             <button class="toggle-btn active" data-players="4"></button>
             <select id="start-player-select">
                 <option value="random">Aléatoire</option>
@@ -31,24 +30,16 @@ describe('SetupManager', () => {
         expect(setupManager.playerCount).toBe(4);
     });
 
-    test('should handle 3 players selection by creating 4th SHARED player', () => {
-        // Toggle to 3 players
-        setupManager.setPlayerCount(3);
-
-        // Mock config row inputs to simulate empty (default) inputs
-        // setPlayerCount calls renderPlayerInputs which creates DOM elements.
-        // We rely on SetupManager internal logic.
-
-        // Trigger Start Game
+    test('should handle 4 players correctly', () => {
+        setupManager.setPlayerCount(4);
         setupManager.startGame();
 
         expect(onStartGame).toHaveBeenCalled();
         const config = onStartGame.mock.calls[0][0];
 
-        expect(config.playerCount).toBe(4); // Should force 4
+        expect(config.playerCount).toBe(4);
         expect(config.players.length).toBe(4);
-        expect(config.players[3].type).toBe('SHARED');
-        expect(config.players[3].name).toContain('Neutre');
+        expect(config.players[0].type).toBe('human');
     });
 
     test('should handle 2 players', () => {

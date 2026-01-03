@@ -70,7 +70,6 @@ Roadmap détaillé pour le développement du projet.
 | 3.75.2 | **State Machine** : Gestion des états UI/Jeu | `state.js`, `main.js` |
 | 3.75.3 | **API Evolution** : `PlayerConfig` dans `CreateGameRequest` | `models.py` |
 | 3.75.4 | **Accessibilité** : Mode Daltonien (Motifs) | `board.js` |
-| 3.75.5 | **3 Joueurs** : Logique de rotation Couleur Partagée | `game.js` |
 
 ## Phase 3.8 : Persistence & UX 💾 - **TERMINÉ**
 

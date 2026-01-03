@@ -65,18 +65,15 @@ class TestGameManagerFactory:
         assert manager[0].name == "Joueur 1"
         assert manager[1].name == "Joueur 2"
     
-    def test_create_standard_game_3_players(self):
-        """Test creating 3-player standard game."""
-        manager = GameManagerFactory.create_standard_game(3)
-        
-        assert manager.player_count == 3
-    
     def test_create_standard_game_invalid_count(self):
         """Test creating standard game with invalid player count."""
-        with pytest.raises(ValueError, match="num_players must be between 2 and 4"):
+        with pytest.raises(ValueError, match="num_players must be 2 or 4"):
             GameManagerFactory.create_standard_game(1)
         
-        with pytest.raises(ValueError, match="num_players must be between 2 and 4"):
+        with pytest.raises(ValueError, match="num_players must be 2 or 4"):
+            GameManagerFactory.create_standard_game(3)
+        
+        with pytest.raises(ValueError, match="num_players must be 2 or 4"):
             GameManagerFactory.create_standard_game(5)
     
     def test_create_standard_game_invalid_starting_player(self):
@@ -231,18 +228,3 @@ class TestGameManagerFactory:
         assert manager1[0].name == manager2[0].name
         assert manager1[1].name == manager2[1].name
     
-    def test_factory_with_shared_player(self):
-        """Test factory with shared player type."""
-        config = [
-            {"id": 0, "name": "Alice", "type": "human"},
-            {"id": 1, "type": "ai", "persona": "random"},
-            {"id": 2, "type": "shared"}
-        ]
-        
-        manager = GameManagerFactory.create_from_config(config)
-        
-        assert manager.player_count == 3
-        assert manager[0].is_human
-        assert manager[1].is_ai
-        assert manager[2].is_shared
-        assert manager[2].name == "Neutre (Partagé)"

@@ -16,7 +16,7 @@ from blokus.player_types import PlayerStatus
 @st.composite
 def valid_game_config(draw):
     """Generate valid game configuration."""
-    num_players = draw(st.integers(min_value=2, max_value=4))
+    num_players = draw(st.sampled_from([2, 4]))
     starting_player = draw(st.integers(min_value=0, max_value=num_players - 1))
     return {"num_players": num_players, "starting_player_idx": starting_player}
 
@@ -46,7 +46,7 @@ class TestGameInvariants:
         assert len(game.players) == config["num_players"]
         assert all(len(p.remaining_pieces) == 21 for p in game.players)
     
-    @given(st.integers(min_value=2, max_value=4))
+    @given(st.sampled_from([2, 4]))
     @settings(max_examples=20, deadline=None)
     def test_random_valid_moves_never_crash(self, num_players):
         """Playing random valid moves should never crash."""
@@ -77,7 +77,7 @@ class TestGameInvariants:
         assert game.status in [GameStatus.IN_PROGRESS, GameStatus.FINISHED]
         assert all(p.score <= 20 for p in game.players)  # Max score is 20
     
-    @given(st.integers(min_value=2, max_value=4), st.integers(min_value=1, max_value=10))
+    @given(st.sampled_from([2, 4]), st.integers(min_value=1, max_value=10))
     @settings(max_examples=30, deadline=None)
     def test_force_pass_maintains_invariants(self, num_players, num_passes):
         """Forcing passes should maintain game invariants."""
@@ -96,7 +96,7 @@ class TestGameInvariants:
         if num_passes >= num_players:
             assert game.status == GameStatus.FINISHED
     
-    @given(st.integers(min_value=2, max_value=4))
+    @given(st.sampled_from([2, 4]))
     @settings(max_examples=20, deadline=None)
     def test_score_calculation_never_negative_beyond_limit(self, num_players):
         """Scores should never be below -89 (all pieces remaining)."""
@@ -114,7 +114,7 @@ class TestGameInvariants:
         for score in scores:
             assert -89 <= score <= 20, f"Score {score} out of valid range [-89, 20]"
     
-    @given(st.integers(min_value=2, max_value=4))
+    @given(st.sampled_from([2, 4]))
     @settings(max_examples=20, deadline=None)
     def test_game_copy_is_independent(self, num_players):
         """Copied game should be independent of original."""
@@ -143,7 +143,7 @@ class TestGameInvariants:
 class TestPlayerInvariants:
     """Test player-related invariants."""
     
-    @given(st.integers(min_value=2, max_value=4))
+    @given(st.sampled_from([2, 4]))
     @settings(max_examples=20, deadline=None)
     def test_pieces_count_decreases_monotonically(self, num_players):
         """Pieces count should only decrease, never increase."""
@@ -168,7 +168,7 @@ class TestPlayerInvariants:
             assert new_count == old_count - 1, "Pieces count should decrease by 1"
             pieces_counts[player_id] = new_count
     
-    @given(st.integers(min_value=2, max_value=4))
+    @given(st.sampled_from([2, 4]))
     @settings(max_examples=20, deadline=None)
     def test_squares_remaining_decreases(self, num_players):
         """Squares remaining should only decrease."""
@@ -197,7 +197,7 @@ class TestPlayerInvariants:
 class TestBoardInvariants:
     """Test board-related invariants."""
     
-    @given(st.integers(min_value=2, max_value=4))
+    @given(st.sampled_from([2, 4]))
     @settings(max_examples=20, deadline=None)
     def test_board_cells_never_overlap(self, num_players):
         """Board cells should never be overwritten."""
@@ -225,7 +225,7 @@ class TestBoardInvariants:
             
             game.play_move(move)
     
-    @given(st.integers(min_value=2, max_value=4))
+    @given(st.sampled_from([2, 4]))
     @settings(max_examples=20, deadline=None)
     def test_board_occupied_count_increases(self, num_players):
         """Board occupied count should only increase."""
@@ -261,7 +261,7 @@ class TestEdgeCases:
         assert game.current_player_idx == starting_player
         assert game.current_player.status == PlayerStatus.PLAYING
     
-    @given(st.integers(min_value=2, max_value=4))
+    @given(st.sampled_from([2, 4]))
     @settings(max_examples=10)
     def test_get_valid_moves_returns_valid_moves(self, num_players):
         """All moves returned by get_valid_moves should be valid."""

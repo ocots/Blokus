@@ -14,18 +14,16 @@ class TestPlayerType:
         """Test enum values."""
         assert PlayerType.HUMAN.value == "human"
         assert PlayerType.AI.value == "ai"
-        assert PlayerType.SHARED.value == "shared"
     
     def test_player_type_count(self):
         """Test number of player types."""
-        assert len(PlayerType) == 3
+        assert len(PlayerType) == 2
     
     def test_player_type_iteration(self):
         """Test enum iteration."""
         types = list(PlayerType)
         assert PlayerType.HUMAN in types
         assert PlayerType.AI in types
-        assert PlayerType.SHARED in types
 
 
 class TestPlayerStatus:
@@ -161,9 +159,8 @@ class TestEnumComparison:
     def test_enum_ordering(self):
         """Test enum ordering (by definition order)."""
         # Test using enum values for comparison
-        assert list(PlayerType) == [PlayerType.HUMAN, PlayerType.AI, PlayerType.SHARED]
+        assert list(PlayerType) == [PlayerType.HUMAN, PlayerType.AI]
         
-        # Test that enums have defined order (no need for alphabetical comparison)
+        # Test that enums have defined order
         assert PlayerType.HUMAN.name == "HUMAN"
         assert PlayerType.AI.name == "AI"
-        assert PlayerType.SHARED.name == "SHARED"

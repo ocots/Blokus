@@ -14,7 +14,6 @@ class PlayerType(Enum):
     """Types of players in the game."""
     HUMAN = "human"
     AI = "ai"
-    SHARED = "shared"
 
 
 class PlayerStatus(Enum):

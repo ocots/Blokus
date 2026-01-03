@@ -39,18 +39,6 @@ class TestPlayerInitialization:
         assert player.persona == "random"
         assert player.display_name == "Bot (random)"
     
-    def test_shared_player_initialization(self):
-        """Shared player initialization."""
-        player = Player(
-            id=2, 
-            name="Neutre", 
-            color="#eab308", 
-            type=PlayerType.SHARED
-        )
-        
-        assert player.is_shared
-        assert not player.is_human
-        assert not player.is_ai
     
     def test_player_with_custom_status(self):
         """Player with custom status."""
@@ -100,31 +88,18 @@ class TestPlayerProperties:
         """Test is_ai property."""
         human = Player(id=0, name="Alice", color="#3b82f6")
         ai = Player(id=1, name="Bot", color="#22c55e", type=PlayerType.AI)
-        shared = Player(id=2, name="Neutre", color="#eab308", type=PlayerType.SHARED)
         
         assert not human.is_ai
         assert ai.is_ai
-        assert not shared.is_ai
     
     def test_is_human_property(self):
         """Test is_human property."""
         human = Player(id=0, name="Alice", color="#3b82f6")
         ai = Player(id=1, name="Bot", color="#22c55e", type=PlayerType.AI)
-        shared = Player(id=2, name="Neutre", color="#eab308", type=PlayerType.SHARED)
         
         assert human.is_human
         assert not ai.is_human
-        assert not shared.is_human
     
-    def test_is_shared_property(self):
-        """Test is_shared property."""
-        human = Player(id=0, name="Alice", color="#3b82f6")
-        ai = Player(id=1, name="Bot", color="#22c55e", type=PlayerType.AI)
-        shared = Player(id=2, name="Neutre", color="#eab308", type=PlayerType.SHARED)
-        
-        assert not human.is_shared
-        assert not ai.is_shared
-        assert shared.is_shared
     
     def test_display_name_property(self):
         """Test display_name property."""
@@ -271,7 +246,6 @@ class TestPlayerSerialization:
         assert data["display_name"] == "Alice"
         assert data["is_ai"] is False
         assert data["is_human"] is True
-        assert data["is_shared"] is False
     
     def test_to_dict_ai_player(self):
         """Test AI player serialization."""

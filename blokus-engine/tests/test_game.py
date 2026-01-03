@@ -323,11 +323,6 @@ class TestStartingPlayer:
         assert game.current_player_idx == 1
         assert len(game.players) == 2
         
-        # 3-player game  
-        game = Game(num_players=3, starting_player_idx=2)
-        assert game.current_player_idx == 2
-        assert len(game.players) == 3
-        
         # 4-player game
         game = Game(num_players=4, starting_player_idx=3)
         assert game.current_player_idx == 3

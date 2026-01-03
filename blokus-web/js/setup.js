@@ -190,21 +190,8 @@ export class SetupManager {
         const startPlayerVal = document.getElementById('start-player-select').value;
         const startPlayer = startPlayerVal === 'random' ? Math.floor(Math.random() * this.playerCount) : parseInt(startPlayerVal);
 
-        // Handle 3-Player mode: Add 4th Shared Player
-        let finalPlayerCount = this.playerCount;
-        if (this.playerCount === 3) {
-            players.push({
-                id: 3,
-                name: 'Neutre (Partagé)',
-                color: this.COLORS[3], // Red usually
-                type: 'shared',
-                persona: null
-            });
-            finalPlayerCount = 4;
-        }
-
         const config = {
-            playerCount: finalPlayerCount,
+            playerCount: this.playerCount,
             players: players,
             startPlayer: startPlayer,
             twoPlayerMode: (this.playerCount === 2) ? this.twoPlayerMode : null

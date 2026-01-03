@@ -63,10 +63,6 @@ class Player:
         """This player is human."""
         return self.type == PlayerType.HUMAN
     
-    @property
-    def is_shared(self) -> bool:
-        """This player is shared (3-player mode)."""
-        return self.type == PlayerType.SHARED
     
     @property
     def display_name(self) -> str:
@@ -137,7 +133,6 @@ class Player:
             "display_name": self.display_name,
             "is_ai": self.is_ai,
             "is_human": self.is_human,
-            "is_shared": self.is_shared,
             "turn_order": self.turn_order
         }
     
