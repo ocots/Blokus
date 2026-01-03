@@ -60,6 +60,7 @@ class MoveResponse(BaseModel):
     success: bool
     message: Optional[str] = None
     game_state: Optional[GameState] = None
+    move: Optional[MoveRequest] = None
 
 class PlayerConfig(BaseModel):
     name: str
@@ -78,6 +79,9 @@ class CreateGameRequest(BaseModel):
     num_players: int = 4
     players: Optional[List[PlayerConfig]] = None
     start_player: Optional[int] = None
+    two_player_mode: Optional[str] = None # 'duo' or 'classic'
+    board_size: Optional[int] = None
+
     
     @field_validator('start_player')
     @classmethod

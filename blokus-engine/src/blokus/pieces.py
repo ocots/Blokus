@@ -140,26 +140,51 @@ def _flip_horizontal(coords: FrozenSet[Tuple[int, int]]) -> FrozenSet[Tuple[int,
     return _normalize_coords(flipped)
 
 
+def _coords_to_key(coords: FrozenSet[Tuple[int, int]]) -> str:
+    """Convert coords to a string key for deduplication."""
+    sorted_coords = sorted(list(coords))
+    return str(sorted_coords)
+
+
 def _generate_all_orientations(base_coords: List[Tuple[int, int]]) -> List[FrozenSet[Tuple[int, int]]]:
-    """Generate all unique orientations (up to 8) for a piece."""
-    orientations: Set[FrozenSet[Tuple[int, int]]] = set()
+    """
+    Generate all unique orientations (up to 8) for a piece.
+    Must match JavaScript implementation logic to ensure index consistency.
+    Order: 
+    1. Original (0°)
+    2. 90°
+    3. 180°
+    4. 270°
+    5. Flip (Horizontal)
+    6. Flip + 90°
+    7. Flip + 180°
+    8. Flip + 270°
+    """
+    seen_keys: Set[str] = set()
+    orientations: List[FrozenSet[Tuple[int, int]]] = []
     
     normalized = _normalize_coords(base_coords)
     current = normalized
     
     # 4 rotations
     for _ in range(4):
-        orientations.add(current)
+        key = _coords_to_key(current)
+        if key not in seen_keys:
+            seen_keys.add(key)
+            orientations.append(current)
         current = _rotate_90(current)
     
     # Flip and 4 more rotations
     flipped = _flip_horizontal(normalized)
     current = flipped
     for _ in range(4):
-        orientations.add(current)
+        key = _coords_to_key(current)
+        if key not in seen_keys:
+            seen_keys.add(key)
+            orientations.append(current)
         current = _rotate_90(current)
     
-    return list(orientations)
+    return orientations
 
 
 @dataclass(frozen=True)

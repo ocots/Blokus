@@ -9,8 +9,9 @@ import { Controls } from './controls.js';
 import { Game } from './game.js';
 import { SetupManager } from './setup.js';
 import { AppStateManager, APP_STATE } from './state.js';
+import { logger } from './logger.js';
 import * as api from './api.js';
-import { initAIAnimationStyles } from './ai/ai-animator.js';
+// import { initAIAnimationStyles } from './ai/ai-animator.js'; // REMOVED
 import { VERSION, logVersion } from './version.js';
 
 /** @type {Game|null} */
@@ -26,9 +27,9 @@ export function getGame() {
     return game;
 }
 
-/**
- * Initialize the application
- */
+// Expose getGame globally for console debugging
+window.getGame = getGame;
+
 /**
  * Initialize the application
  */
@@ -36,9 +37,6 @@ async function initApp() {
     // Log version info first
     logVersion();
     console.log(`${VERSION.getLogPrefix()} 🎮 Initializing Blokus App...`);
-
-    // Initialize AI animation styles
-    initAIAnimationStyles();
 
     // Initialize State Manager
     stateManager = new AppStateManager();
@@ -114,9 +112,13 @@ async function initApp() {
     // Check API availability first
     let isApiAvailable = false;
     try {
-        isApiAvailable = await api.isServerAvailable();
-        if (isApiAvailable) {
+        const apiData = await api.isServerAvailable();
+        if (apiData) {
+            isApiAvailable = true;
             console.log(`${VERSION.getLogPrefix()} 🌐 API server detected at ${api.getBaseUrl()}`);
+            if (apiData.pid) {
+                console.log(`${VERSION.getLogPrefix()} 🆔 Backend PID: ${apiData.pid} | Started: ${apiData.started_at}`);
+            }
         } else {
             console.log(`${VERSION.getLogPrefix()} 📴 API server not available, using local mode`);
         }
@@ -148,6 +150,9 @@ async function resumeGame(json) {
 
     // Create game instance (always local for resumed games)
     game = new Game(board, controls, data.config, null);
+
+    // Update global reference for console debugging
+    window.getGame = getGame;
 
     // Restore state
     const success = game.deserialize(json);
@@ -184,12 +189,28 @@ async function launchGame(config, isApiAvailable) {
     const useApiClient = isApiAvailable ? api : null;
     game = new Game(board, controls, config, useApiClient);
 
+    // Update global reference for console debugging
+    window.getGame = getGame;
+
     // If using API, initialize from server
     if (useApiClient) {
         try {
             // Need to tell API to create a new game with specific player count
             // Note: API implementation currently ignores player names/types, only cares about count
-            await api.createGame(config.playerCount);
+            // Pass config values, including startPlayer, players array, and mode options
+            logger.api('CALLING api.createGame with:', {
+                count: config.playerCount,
+                start: config.startPlayer,
+                players: config.players,
+                opts: { twoPlayerMode: config.twoPlayerMode }
+            });
+
+            await api.createGame(
+                config.playerCount,
+                config.startPlayer,
+                config.players,
+                { twoPlayerMode: config.twoPlayerMode }
+            );
 
             // Sync initial state
             await game.initFromApi();
@@ -199,6 +220,8 @@ async function launchGame(config, isApiAvailable) {
             console.log('↩️ Falling back to local mode');
             // Re-create game without API client
             game = new Game(board, controls, config, null);
+            // Update reference again after fallback
+            window.getGame = getGame;
         }
     } else {
         console.log(`${VERSION.getLogPrefix()} ✅ Blokus ready (local mode)`);

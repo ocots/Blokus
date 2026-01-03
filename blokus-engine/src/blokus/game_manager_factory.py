@@ -165,3 +165,53 @@ class GameManagerFactory:
             })
         
         return cls.create_from_config(player_configs, starting_player_id)
+    
+    @classmethod
+    def create_standard_2p_game(
+        cls,
+        player_configs: List[Dict[str, Any]],
+        starting_player_id: int = 0
+    ) -> GameManager:
+        """
+        Create a standard 4-color game played by 2 humans (or AIs).
+        
+        Mapping logic (matching default ID->Color mapping):
+        0 = Blue (P1)
+        1 = Green (P2)
+        2 = Yellow (P2)
+        3 = Red (P1)
+        """
+        if len(player_configs) != 2:
+            raise ValueError(f"Standard 2P game requires exactly 2 player configs, got {len(player_configs)}")
+            
+        real_p1 = player_configs[0]
+        real_p2 = player_configs[1]
+        
+        expanded_configs = []
+        
+        # ID 0: P1 (Blue)
+        p0 = real_p1.copy()
+        p0['id'] = 0
+        p0['name'] = f"{real_p1.get('name', 'Joueur 1')} (Bleu)"
+        expanded_configs.append(p0)
+        
+        # ID 1: P2 (Green)
+        p1 = real_p2.copy()
+        p1['id'] = 1
+        p1['name'] = f"{real_p2.get('name', 'Joueur 2')} (Vert)"
+        # Update AI persona if needed? Same persona for both colors.
+        expanded_configs.append(p1)
+        
+        # ID 2: P1 (Yellow) - Use real_p1
+        p2 = real_p1.copy()
+        p2['id'] = 2
+        p2['name'] = f"{real_p1.get('name', 'Joueur 1')} (Jaune)"
+        expanded_configs.append(p2)
+        
+        # ID 3: P2 (Red) - Use real_p2
+        p3 = real_p2.copy()
+        p3['id'] = 3
+        p3['name'] = f"{real_p2.get('name', 'Joueur 2')} (Rouge)"
+        expanded_configs.append(p3)
+        
+        return cls.create_from_config(expanded_configs, starting_player_id)

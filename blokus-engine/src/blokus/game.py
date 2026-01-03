@@ -8,7 +8,7 @@ from blokus.board import Board, BOARD_SIZE
 from blokus.player import Player
 from blokus.player_factory import PlayerFactory
 from blokus.game_manager import GameManager
-from blokus.rules import is_valid_placement, get_valid_placements, has_valid_move
+from blokus.rules import is_valid_placement, get_valid_placements, has_valid_move, get_placement_rejection_reason
 
 
 class GameStatus(Enum):
@@ -125,26 +125,37 @@ class Game:
         
         return valid_moves
     
-    def is_valid_move(self, move: Move) -> bool:
-        """Check if a move is valid."""
+    def get_move_rejection_reason(self, move: Move) -> Optional[str]:
+        """
+        Check if a move is valid and return the reason if not.
+        Returns None if the move is valid.
+        """
         # Validate player_id
         if move.player_id < 0 or move.player_id >= len(self.players):
-            return False
+            return f"Invalid player_id {move.player_id}"
         
         player = self.players[move.player_id]
         
         # Check piece is available
         if move.piece_type not in player.remaining_pieces:
-            return False
+            return f"Piece {move.piece_type.name} not in remaining pieces"
         
         # Check current player's turn
         if move.player_id != self.current_player_idx:
-            return False
+            return f"Not player {move.player_id}'s turn (current: {self.current_player_idx})"
         
         piece = move.get_piece()
         is_first = self.is_first_move(move.player_id)
         
-        return is_valid_placement(self.board, piece, move.row, move.col, move.player_id, is_first)
+        placement_reason = get_placement_rejection_reason(self.board, piece, move.row, move.col, move.player_id, is_first)
+        if placement_reason:
+            return placement_reason
+            
+        return None
+
+    def is_valid_move(self, move: Move) -> bool:
+        """Check if a move is valid."""
+        return self.get_move_rejection_reason(move) is None
     
     def play_move(self, move: Move) -> bool:
         """

@@ -7,6 +7,10 @@
  * @module api
  */
 
+import { logger } from './logger.js';
+
+logger.info("🔥 API MODULE LOADED v1.1 - CHECKING CACHE 🔥");
+
 /**
  * Default API base URL (can be overridden via setBaseUrl)
  * @type {string}
@@ -71,10 +75,14 @@ async function _request(endpoint, options = {}) {
  * @param {Array} [players=null] - Optional array of player configurations
  * @returns {Promise<Object>} Initial game state
  */
-export async function createGame(numPlayers = 4, startPlayer = 0, players = null) {
+export async function createGame(numPlayers = 4, startPlayer = 0, players = null, options = {}) {
+    logger.api('createGame ARGS:', { numPlayers, startPlayer, players, options });
+
     const requestBody = { 
         num_players: numPlayers,
-        start_player: startPlayer
+        start_player: startPlayer,
+        ...options.twoPlayerMode && { two_player_mode: options.twoPlayerMode },
+        ...options.boardSize && { board_size: options.boardSize }
     };
     
     // Include player configurations if provided
@@ -82,10 +90,15 @@ export async function createGame(numPlayers = 4, startPlayer = 0, players = null
         requestBody.players = players;
     }
     
-    return _request('/game/new', {
+    logger.api('createGame PAYLOAD:', JSON.stringify(requestBody, null, 2));
+
+    const response = await _request('/game/new', {
         method: 'POST',
         body: JSON.stringify(requestBody),
     });
+
+    logger.api('createGame RESPONSE Board Size:', response.board ? response.board.length : 'unknown');
+    return response;
 }
 
 /**
@@ -148,10 +161,10 @@ export async function getAISuggestedMove() {
  */
 export async function isServerAvailable() {
     try {
-        await _request('/');
-        return true;
+        const data = await _request('/');
+        return data; // Returns object with version, pid, started_at
     } catch {
-        return false;
+        return null; // Server unavailable
     }
 }
 

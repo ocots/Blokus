@@ -8,6 +8,7 @@ import { PIECES, getPiece, getAllPieceTypes, PieceType } from './pieces.js';
 import { DUO_STARTING_CORNERS, STARTING_CORNERS } from './board.js';
 import { PlayerStateMachine } from './state/player-state.js';
 import { AIFactory } from './ai/ai-factory.js';
+import { logger } from './logger.js';
 
 /**
  * Game class manages the overall game state.
@@ -50,6 +51,9 @@ export class Game {
 
         // Settings
         this._settings = config.settings || {};
+        if (this._settings.fastMode === undefined) {
+            this._settings.fastMode = true; // Enable fastMode by default for testing
+        }
         this._sharedTurnControllerIndex = 0;
 
         this._init();
@@ -88,6 +92,19 @@ export class Game {
     }
 
     /**
+     * Enable/disable fast mode for AI (skips delays and animations)
+     * Can be called from console: getGame().setFastMode(true)
+     * @param {boolean} enabled
+     */
+    setFastMode(enabled) {
+        this._settings.fastMode = enabled;
+        for (const [playerId, controller] of this._aiControllers) {
+            controller.setFastMode(enabled);
+        }
+        console.log(`🎮 Fast mode ${enabled ? 'enabled' : 'disabled'} for all AI players`);
+    }
+
+    /**
      * Initialize game state
      * @private
      */
@@ -118,11 +135,16 @@ export class Game {
                 const playerConfig = this._config.players ? this._config.players[controllerId] : null;
                 const controllerName = playerConfig ? playerConfig.name : `Joueur ${controllerId + 1}`;
 
+                const colorName = ['Bleu', 'Vert', 'Jaune', 'Rouge'][colorId];
+                logger.debug(`🔧 Standard 2P: P${colorId} (${colorName}) -> Config[${controllerId}] Type=${playerConfig?.type}`);
+
                 this._players.push({
                     id: colorId,
-                    name: `${controllerName} (Couleur ${colorId + 1})`,
+                    name: `${controllerName} (${colorName})`,
                     controlledBy: controllerId,
                     color: playerConfig ? playerConfig.color : null,
+                    type: playerConfig ? playerConfig.type : 'human',      // CRITICAL: copy type!
+                    persona: playerConfig ? playerConfig.persona : null,   // CRITICAL: copy persona!
                     remainingPieces: new Set(getAllPieceTypes()),
                     hasPassed: false,
                     lastPieceWasMonomino: false
@@ -158,17 +180,24 @@ export class Game {
         this._playerStates = [];
         this._aiControllers.clear();
         
+        // AI options (including fastMode from settings)
+        const aiOptions = {
+            fastMode: this._settings.fastMode ?? false
+        };
+
         for (let i = 0; i < this._numPlayers; i++) {
             const stateMachine = new PlayerStateMachine();
             this._playerStates.push(stateMachine);
 
             // Setup AI controller if player is AI
             if (this._isAIPlayer(i)) {
+                logger.debug(`🤖 Creating AI Controller for P${i}`);
                 const aiController = AIFactory.createController(
                     this._useApi, 
                     this._apiClient,
                     this._board,
-                    this._controls
+                    this._controls,
+                    aiOptions
                 );
                 this._aiControllers.set(i, aiController);
             }
@@ -182,7 +211,10 @@ export class Game {
         }
         
         // Start first turn (will trigger AI if needed)
-        this._startTurn(this._currentPlayer);
+        // In API mode, we wait for sync before starting (to avoid playing on empty board)
+        if (!this._useApi) {
+            this._startTurn(this._currentPlayer);
+        }
     }
 
     /**
@@ -212,10 +244,11 @@ export class Game {
     async initFromApi() {
         if (!this._useApi) return;
 
+
         try {
-            const startPlayer = this._config.startPlayer || 0;
-            const players = this._config.players || null;
-            const state = await this._apiClient.createGame(this._numPlayers, startPlayer, players);
+            // Game is already created by main.js with proper config
+            // Just fetch the current state
+            const state = await this._apiClient.getGameState();
             this._syncFromServerState(state);
         } catch (err) {
             console.error('API init failed:', err);
@@ -230,7 +263,16 @@ export class Game {
      * @returns {boolean}
      */
     isFirstMove(playerId) {
-        return !this._moveHistory.some(m => m.playerId === playerId);
+        // In local mode, we could trust moveHistory.
+        // In API mode, moveHistory is not fully synced.
+        // Robust check: If player has full set of pieces (21), it's their first move.
+        // Assuming 21 pieces total (standard & duo).
+        const player = this._players[playerId];
+        if (!player) return true;
+
+        // Use total piece count (21)
+        // If remainingPieces is a Set, check size.
+        return player.remainingPieces.size === 21; 
     }
 
     /**
@@ -369,6 +411,10 @@ export class Game {
      * @private
      */
     _syncFromServerState(serverState) {
+        // Deactivate all players first to ensure clean state transition
+        // This handles cases where local state is out of sync with server
+        this._playerStates.forEach(ps => ps.deactivate());
+
         // Update board grid
         this._board.setGridFromArray(serverState.board);
 
@@ -378,16 +424,23 @@ export class Game {
         if (this._players.length !== serverPlayers.length) {
             // If mismatch (shouldn't happen on normal start), re-init but try to keep names if possible?
             // Or just logging warning.
-            console.warn(`Sync: Player count mismatch. Local: ${this._players.length}, Server: ${serverPlayers.length}`);
+            logger.warn(`Sync: Player count mismatch. Local: ${this._players.length}, Server: ${serverPlayers.length}`);
             this._numPlayers = serverPlayers.length;
             this._players = serverPlayers.map(p => ({
                 id: p.id,
-                name: `Joueur ${p.id + 1}`, // Fallback
+                name: p.name || `Joueur ${p.id + 1}`, // Fallback
+                color: p.color || this._players[p.id]?.color,
+                type: p.type || 'human',
+                persona: p.persona,
                 remainingPieces: new Set(p.pieces_remaining),
                 hasPassed: p.has_passed,
                 lastPieceWasMonomino: false
             }));
+
+            // Should potentialy re-init AI controllers here if types changed?
+            // For now, assume this mismatch path is rare/error recovery.
         } else {
+            logger.debug(`Sync: Merging server state for ${serverPlayers.length} players.`);
             // Merge server state into existing player objects to preserve names/colors
             serverPlayers.forEach((p, index) => {
                 // Assuming server array order matches ID order 0..3
@@ -413,6 +466,10 @@ export class Game {
         // Show game over if finished
         if (this._gameOver) {
             this._showGameOver();
+        } else {
+            // Start next player's turn (both AI and human)
+            logger.debug(`🔄 Sync done. Scheduling _startTurn for P${this._currentPlayer}...`);
+            setTimeout(() => this._startTurn(this._currentPlayer), 100);
         }
     }
 
@@ -451,6 +508,7 @@ export class Game {
      * @private
      */
     _startTurn(playerId) {
+        logger.debug(`🎬 _startTurn called for P${playerId}. isAI=${this._isAIPlayer(playerId)}`);
         const playerState = this._playerStates[playerId];
 
         if (this._isAIPlayer(playerId)) {
@@ -555,6 +613,11 @@ export class Game {
      * @private
      */
     _isAIPlayer(playerId) {
+        // Must check internal player list first as config might be 2P mode expanded to 4P
+        if (this._players && this._players[playerId]) {
+            return this._players[playerId].type === 'ai';
+        }
+        // Fallback to config (only if called before init)
         const playerConfig = this._config.players?.[playerId];
         return playerConfig?.type === 'ai';
     }

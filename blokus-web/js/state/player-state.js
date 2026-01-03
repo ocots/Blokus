@@ -48,7 +48,9 @@ export class PlayerStateMachine extends StateMachine {
      * Activate player (human player's turn)
      */
     activate() {
-        this.transitionTo(PlayerState.ACTIVE);
+        if (this.state !== PlayerState.ACTIVE) {
+            this.transitionTo(PlayerState.ACTIVE);
+        }
     }
 
     /**

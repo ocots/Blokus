@@ -5,6 +5,7 @@
  */
 
 import { PIECES } from './pieces.js';
+import { logger } from './logger.js';
 
 export const BOARD_SIZE = 20;
 export const CELL_SIZE = 30; // pixels per cell
@@ -173,9 +174,22 @@ export class Board {
      * @param {number[][]} gridArray - 2D array of cell values (0-4)
      */
     setGridFromArray(gridArray) {
-        if (gridArray.length !== this.size || gridArray[0].length !== this.size) {
-            console.error('Invalid grid size');
-            return;
+        if (!gridArray || !gridArray[0]) return;
+        const newSize = gridArray.length;
+
+        if (newSize !== this.size) {
+            logger.warn(`Resizing board from ${this.size} to ${newSize}. Incoming grid size: ${newSize}x${gridArray[0].length}`);
+            this.size = newSize;
+            this.cellSize = this.canvas.width / this.size;
+
+            // Re-render empty grid with new size is handled by assignment below and render() call
+
+            // Adjust starting corners based on size
+            if (this.size === 14) {
+                this.startingCorners = DUO_STARTING_CORNERS;
+            } else {
+                this.startingCorners = STARTING_CORNERS;
+            }
         }
         this._grid = gridArray.map(row => [...row]); // Deep copy
         this._hoverPosition = null;
@@ -306,6 +320,7 @@ export class Board {
         const positions = piece.translate(row, col);
         const playerCells = this.getPlayerCells(playerId);
 
+
         // Check all cells are valid and empty
         for (const [r, c] of positions) {
             if (!this.isValidPosition(r, c) || !this.isEmpty(r, c)) {
@@ -331,6 +346,7 @@ export class Board {
         // Must touch own pieces by at least one corner
         const playerCorners = new Set(this.getPlayerCorners(playerId).map(c => `${c[0]},${c[1]}`));
         const touchesCorner = positions.some(([r, c]) => playerCorners.has(`${r},${c}`));
+
         return touchesCorner;
     }
 
@@ -457,6 +473,54 @@ export class Board {
         this._hoverPosition = null;
         this._hoverValid = false;
         this.render();
+    }
+
+    /**
+     * Show piece preview at specific location (for AI animation)
+     * @param {Object} piece 
+     * @param {number} row 
+     * @param {number} col 
+     */
+    showPreview(piece, row, col) {
+        this._hoverPiece = piece;
+        this._hoverPosition = [row, col];
+        if (this._game) {
+            this._hoverValid = this.isValidPlacement(
+                piece, row, col,
+                this._game.currentPlayer,
+                this._game.isFirstMove(this._game.currentPlayer)
+            );
+        } else {
+            this._hoverValid = true;
+        }
+        this.render();
+    }
+
+    /**
+     * Clear preview
+     */
+    clearPreview() {
+        this.clearHover();
+    }
+
+    /**
+     * Highlight cells (alias for showPreview for now)
+     * @param {Object} piece 
+     * @param {number} row 
+     * @param {number} col 
+     */
+    highlightCells(piece, row, col) {
+        this.showPreview(piece, row, col);
+        // Force "valid" look for placement animation
+        this._hoverValid = true;
+        this.render();
+    }
+
+    /**
+     * Clear highlight
+     */
+    clearHighlight() {
+        this.clearHover();
     }
 
     /**
