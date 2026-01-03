@@ -20,39 +20,33 @@ export class AIFactory {
      * Create AI controller based on mode
      * @param {boolean} useApi - Whether to use API mode
      * @param {Object|null} apiClient - API client instance (required if useApi is true)
-     * @param {Object|null} board - Board instance for animations (Ignored)
-     * @param {Object|null} controls - Controls instance for animations (Ignored)
      * @param {Object} options - Optional configuration
      * @returns {AIController}
      */
-    static createController(useApi, apiClient = null, board = null, controls = null, options = {}) {
+    static createController(useApi, apiClient = null, options = {}) {
         const strategy = useApi
             ? new APIAIStrategy(apiClient)
             : new LocalAIStrategy();
         
-        return new AIController(strategy, null, options);
+        return new AIController(strategy);
     }
 
     /**
      * Create local AI controller
-     * @param {Object|null} board - Board instance for animations (Ignored)
-     * @param {Object|null} controls - Controls instance for animations (Ignored)
      * @param {Object} options - Optional configuration
      * @returns {AIController}
      */
-    static createLocalController(board = null, controls = null, options = {}) {
-        return new AIController(new LocalAIStrategy(), null, options);
+    static createLocalController(options = {}) {
+        return new AIController(new LocalAIStrategy());
     }
 
     /**
      * Create API AI controller
      * @param {Object} apiClient - API client instance
-     * @param {Object|null} board - Board instance for animations (Ignored)
-     * @param {Object|null} controls - Controls instance for animations (Ignored)
      * @param {Object} options - Optional configuration
      * @returns {AIController}
      */
-    static createAPIController(apiClient, board = null, controls = null, options = {}) {
-        return new AIController(new APIAIStrategy(apiClient), null, options);
+    static createAPIController(apiClient, options = {}) {
+        return new AIController(new APIAIStrategy(apiClient));
     }
 }

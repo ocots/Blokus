@@ -17,10 +17,8 @@ export class AIController {
     /**
      * Create AI controller
      * @param {AIStrategy} aiStrategy - AI strategy instance (dependency injection)
-     * @param {Object} animator - OPTIONAL/IGNORED (kept for signature compatibility)
-     * @param {Object} options - OPTIONAL/IGNORED
      */
-    constructor(aiStrategy, animator = null, options = {}) {
+    constructor(aiStrategy) {
         this._strategy = aiStrategy;
         this._isExecuting = false;
     }

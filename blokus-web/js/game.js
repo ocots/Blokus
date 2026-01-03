@@ -195,8 +195,6 @@ export class Game {
                 const aiController = AIFactory.createController(
                     this._useApi, 
                     this._apiClient,
-                    this._board,
-                    this._controls,
                     aiOptions
                 );
                 this._aiControllers.set(i, aiController);
