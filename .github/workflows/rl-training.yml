@@ -168,11 +168,11 @@ jobs:
           # Check for NVIDIA GPU
           if command -v nvidia-smi &> /dev/null; then
             echo "🎮 GPU detected, installing standard PyTorch..."
-            pip install numpy gymnasium torch tensorboard
+            pip install numpy gymnasium torch tensorboard matplotlib
           else
             echo "🖥️ No GPU detected (or GitHub runner), installing CPU-only PyTorch..."
             pip install torch --index-url https://download.pytorch.org/whl/cpu
-            pip install numpy gymnasium tensorboard
+            pip install numpy gymnasium tensorboard matplotlib
           fi
           
           echo "✅ Dependencies installed"
