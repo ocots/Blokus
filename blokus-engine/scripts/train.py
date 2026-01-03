@@ -146,6 +146,7 @@ def train(
     print(f"Board: {config.board_size}x{config.board_size}")
     print(f"Episodes: {config.total_episodes}")
     print(f"Device: auto")
+    print(f"Eval Games: {config.eval_games}")
     print(f"Log Freq: {log_freq} episodes")
     print(f"{'='*60}\n")
     
