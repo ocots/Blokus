@@ -135,7 +135,8 @@ def train(
     config: TrainingConfig,
     checkpoint_manager: CheckpointManager,
     resume: bool = False,
-    no_viz: bool = False
+    no_viz: bool = False,
+    log_freq: int = 100
 ):
     """Main training loop."""
     print(f"\n{'='*60}")
@@ -145,6 +146,7 @@ def train(
     print(f"Board: {config.board_size}x{config.board_size}")
     print(f"Episodes: {config.total_episodes}")
     print(f"Device: auto")
+    print(f"Log Freq: {log_freq} episodes")
     print(f"{'='*60}\n")
     
     # Create components
@@ -225,9 +227,9 @@ def train(
             )
             
             # Progress output
-            if (episode + 1) % 100 == 0:
+            if (episode + 1) % log_freq == 0:
                 elapsed = time.time() - start_time
-                eps_per_sec = (episode - start_episode + 1) / elapsed
+                eps_per_sec = (episode - start_episode + 1) / (elapsed + 1e-6)
                 print(f"Episode {episode + 1}/{config.total_episodes} | "
                       f"Win Rate (100): {np.mean(recent_wins):.1%} | "
                       f"Loss: {ep_stats['loss']:.4f} | "
@@ -345,6 +347,8 @@ def main():
                         help="Batch size")
     parser.add_argument("--eval-freq", type=int, default=1000,
                         help="Evaluation frequency (episodes)")
+    parser.add_argument("--log-freq", type=int, default=100,
+                        help="Logging frequency (episodes)")
     
     # Visualization
     parser.add_argument("--no-viz", action="store_true",
@@ -372,6 +376,9 @@ def main():
             record_video=not args.no_video and not args.no_viz,
             models_dir=models_dir
         )
+        # Store log_freq in config or pass it separately? 
+        # Since config is frozen/dataclass, easier to pass it or hack it. 
+        # But wait, config structure is fixed. Let's pass it to train() function.
         
         checkpoint_manager = CheckpointManager.create_experiment(
             name=args.name,
@@ -379,7 +386,7 @@ def main():
             base_dir=models_dir
         )
         
-        train(config, checkpoint_manager, resume=False, no_viz=args.no_viz)
+        train(config, checkpoint_manager, resume=False, no_viz=args.no_viz, log_freq=args.log_freq)
     
     elif args.resume:
         # Find experiment by name
@@ -396,7 +403,7 @@ def main():
         state = checkpoint_manager.load_metadata()
         config = TrainingConfig.from_dict(state.config)
         
-        train(config, checkpoint_manager, resume=True, no_viz=args.no_viz)
+        train(config, checkpoint_manager, resume=True, no_viz=args.no_viz, log_freq=args.log_freq)
     
     elif args.resume_latest:
         experiments = CheckpointManager.list_experiments(models_dir)
@@ -409,7 +416,7 @@ def main():
         state = checkpoint_manager.load_metadata()
         config = TrainingConfig.from_dict(state.config)
         
-        train(config, checkpoint_manager, resume=True, no_viz=args.no_viz)
+        train(config, checkpoint_manager, resume=True, no_viz=args.no_viz, log_freq=args.log_freq)
 
 
 if __name__ == "__main__":
