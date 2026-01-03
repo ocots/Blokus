@@ -70,6 +70,14 @@ export class Game {
     }
 
     /**
+     * Get move history
+     * @returns {Array}
+     */
+    get moveHistory() {
+        return [...this._moveHistory];
+    }
+
+    /**
      * Get current player ID
      * @returns {number}
      */
@@ -137,14 +145,19 @@ export class Game {
                 const playerConfig = this._config.players ? this._config.players[controllerId] : null;
                 const controllerName = playerConfig ? playerConfig.name : `Joueur ${controllerId + 1}`;
 
+                // Sync with visual order: Blue -> Green -> Yellow -> Red
                 const colorName = ['Bleu', 'Vert', 'Jaune', 'Rouge'][colorId];
                 logger.debug(`🔧 Standard 2P: P${colorId} (${colorName}) -> Config[${controllerId}] Type=${playerConfig?.type}`);
+
+                // Assign specific colors for Blokus Standard matches observed visual order
+                const standardColors = ['blue', 'green', 'yellow', 'red'];
+                const assignedColor = standardColors[colorId];
 
                 this._players.push({
                     id: colorId,
                     name: `${controllerName} (${colorName})`,
                     controlledBy: controllerId,
-                    color: playerConfig ? playerConfig.color : null,
+                    color: assignedColor, // FORCE correct color in the player object
                     type: playerConfig ? playerConfig.type : 'human',      // CRITICAL: copy type!
                     persona: playerConfig ? playerConfig.persona : null,   // CRITICAL: copy persona!
                     remainingPieces: new Set(getAllPieceTypes()),
@@ -161,10 +174,15 @@ export class Game {
                 const name = playerConfig ? (playerConfig.name || `Joueur ${i + 1}`) : `Joueur ${i + 1}`;
                 console.log(`Init player ${i}: name="${name}"`, playerConfig);
 
+                // Assign default colors if not provided
+                // Standard order: Blue, Green, Yellow, Red
+                const defaultColors = ['blue', 'green', 'yellow', 'red'];
+                const finalColor = (playerConfig && playerConfig.color) ? playerConfig.color : defaultColors[i % 4];
+
                 this._players.push({
                     id: i,
                     name: name,
-                    color: playerConfig ? playerConfig.color : null,
+                    color: finalColor, // FORCE valid color
                     type: playerConfig ? playerConfig.type : 'human',
                     persona: playerConfig ? playerConfig.persona : null,
                     remainingPieces: new Set(getAllPieceTypes()),
@@ -312,6 +330,15 @@ export class Game {
                 col
             ).then(response => {
                 if (response.success) {
+                    // NEW: Track history in API mode BEFORE sync to ensure game over trigger has full history
+                    this._moveHistory.push({
+                        playerId,
+                        pieceType: piece.type,
+                        orientation: piece.orientationIndex,
+                        row,
+                        col
+                    });
+
                     this._syncFromServerState(response.game_state);
                     this._controls.clearSelection();
                     return true;
@@ -755,6 +782,19 @@ export class Game {
         }
 
         modal.classList.remove('hidden');
+
+        // NEW: Trigger replay initialization if listener is set
+        if (this._onGameOver) {
+            this._onGameOver(this._moveHistory);
+        }
+    }
+
+    /**
+     * Set a callback for when game is over
+     * @param {Function} callback 
+     */
+    onGameOver(callback) {
+        this._onGameOver = callback;
     }
 
     /**
