@@ -157,6 +157,14 @@ export async function getAISuggestedMove() {
 }
 
 /**
+ * Get list of available AI models/personas.
+ * @returns {Promise<Array>} List of AI model objects
+ */
+export async function getAIModels() {
+    return _request('/ai/models');
+}
+
+/**
  * Check if the API server is reachable.
  * @returns {Promise<boolean>} True if server responds
  */
@@ -180,4 +188,5 @@ Object.freeze({
     resetGame,
     getAISuggestedMove,
     isServerAvailable,
+    getAIModels,
 });

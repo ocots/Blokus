@@ -11,6 +11,7 @@ import { SetupManager } from './setup.js';
 import { AppStateManager, APP_STATE } from './state.js';
 import { logger } from './logger.js';
 import * as api from './api.js';
+window.api = api; // Expose for other modules like setup.js
 import { ReplayManager } from './replay.js';
 import { VERSION, logVersion } from './version.js';
 

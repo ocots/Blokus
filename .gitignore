@@ -202,3 +202,5 @@ training_queue.json
 
 # --- OS ---
 .DS_Store
+# Ignore heavy RL checkpoints
+**/checkpoint_*.pt

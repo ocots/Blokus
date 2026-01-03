@@ -26,9 +26,38 @@ export class SetupManager {
         this.init();
     }
 
-    init() {
+    async init() {
         // Initial Render based on Store State
         const state = this.store.getState();
+
+        // Load available AI models from API
+        try {
+            if (window.api && window.api.isServerAvailable) {
+                const models = await window.api.getAIModels();
+                if (models && models.length > 0) {
+                    this.AVAILABLE_PERSONAS = models.map(m => ({
+                        val: m.id,
+                        label: m.name,
+                        title: m.description,
+                        tags: m.tags || []
+                    }));
+                }
+            }
+        } catch (e) {
+            console.warn('Failed to load AI models from API, using defaults', e);
+        }
+
+        // Default personas if API fails or not used
+        if (!this.AVAILABLE_PERSONAS) {
+            this.AVAILABLE_PERSONAS = [
+                { val: 'random', label: 'Aléatoire', title: 'Joue de manière totalement aléatoire. Niveau : Débutant' },
+                { val: 'aggressive', label: 'Agressif', title: 'Cherche à bloquer l\'adversaire. Niveau : Moyen' },
+                { val: 'defensive', label: 'Défensif', title: 'Privilégie sa propre sécurité. Niveau : Moyen' },
+                { val: 'efficient', label: 'Efficace', title: 'Cherche à maximiser ses points. Niveau : Difficile' },
+                { val: 'dqn_duo_v1', label: 'Expert Duo', title: 'IA Entraînée DQN. Niveau : Expert', tags: ['expert', 'duo-only'] }
+            ];
+        }
+
         this.setPlayerCountUI(state.playerCount);
         this.setModeUI(state.twoPlayerMode);
 
@@ -119,6 +148,9 @@ export class SetupManager {
         this.modeBtns.forEach(btn => {
             btn.classList.toggle('active', btn.dataset.mode === mode);
         });
+
+        // Re-render player inputs when mode changes to filter available AIs
+        this.renderPlayerInputs();
     }
 
     setPlayerCountUI(count) {
@@ -143,6 +175,8 @@ export class SetupManager {
         const state = this.store.getState();
         const count = state.playerCount;
         const players = state.players;
+        const currentMode = state.twoPlayerMode;
+        const isDuo = count === 2 && currentMode === 'duo';
 
         for (let i = 0; i < count; i++) {
             const playerConfig = players[i];
@@ -194,14 +228,21 @@ export class SetupManager {
             const personaSelect = document.createElement('select');
             personaSelect.className = 'setup-input persona-select';
 
-            const personas = [
-                { val: 'random', label: 'Aléatoire', title: 'Joue de manière totalement aléatoire. Niveau : Débutant' },
-                { val: 'aggressive', label: 'Agressif', title: 'Cherche à bloquer l\'adversaire. Niveau : Moyen' },
-                { val: 'defensive', label: 'Défensif', title: 'Privilégie sa propre sécurité. Niveau : Moyen' },
-                { val: 'efficient', label: 'Efficace', title: 'Cherche à maximiser ses points. Niveau : Difficile' }
-            ];
+            // Filter personas based on tags
+            const filteredPersonas = this.AVAILABLE_PERSONAS.filter(p => {
+                const tags = p.tags || [];
+                // If Duo mode, allow 'any-mode' and 'duo-only'
+                // If not Duo (Standard), allow 'any-mode' and 'standard-only'
+                const isGeneric = tags.includes('any-mode') || tags.length === 0;
 
-            personaSelect.innerHTML = personas.map(p =>
+                if (isDuo) {
+                    return isGeneric || tags.includes('duo-only');
+                } else {
+                    return isGeneric || tags.includes('standard-only');
+                }
+            });
+
+            personaSelect.innerHTML = filteredPersonas.map(p =>
                 `<option value="${p.val}" title="${p.title}" ${playerConfig.persona === p.val ? 'selected' : ''}>${p.label}</option>`
             ).join('');
 
@@ -214,7 +255,6 @@ export class SetupManager {
             // Set initial visibility
             const isAI = playerConfig.type === 'ai';
             nameInput.style.display = isAI ? 'none' : 'block';
-            personaSelect.style.display = isAI ? 'block' : 'none';
             personaSelect.style.display = isAI ? 'block' : 'none';
 
             inputWrapper.appendChild(nameInput);
@@ -230,7 +270,7 @@ export class SetupManager {
         // Update Start Player Select options
         const startSelect = document.getElementById('start-player-select');
         // Save current value to restore if possible, though initialized in init
-        const currentValue = startSelect.value;
+        // const currentValue = startSelect.value; // Unused variable
 
         startSelect.innerHTML = '<option value="random">Aléatoire</option>';
         for (let i = 0; i < count; i++) {
@@ -256,14 +296,9 @@ export class SetupManager {
             // For AI, force name to be persona-based if needed, or keep stored name?
             // Existing logic overrode name for AI. Let's keep consistency.
             if (p.type === 'ai') {
-                // Map persona to display name is done in backend usually, but here we can set a default
-                const personaLabels = {
-                    'random': 'Bot Aléatoire',
-                    'aggressive': 'Bot Agressif',
-                    'defensive': 'Bot Défensif',
-                    'efficient': 'Bot Efficace'
-                };
-                name = personaLabels[p.persona] || p.name;
+                // Find label in available personas
+                const persona = this.AVAILABLE_PERSONAS ? this.AVAILABLE_PERSONAS.find(per => per.val === p.persona) : null;
+                name = persona ? `Bot ${persona.label}` : (p.name || 'Bot IA');
             }
 
             players.push({

@@ -26,7 +26,7 @@
     "name": "Expert Duo",
     "description": "IA entraînée avec Deep Q-Network sur le mode Duo 14×14. Niveau expert.",
     "type": "model",
-    "model_path": "experiments/duo_master_v1/checkpoint_best.pt",
+    "model_path": "experiments/duo_test_v2_20260103_225809/model.pt",
     "config": {
       "board_size": 14,
       "num_players": 2,
@@ -35,7 +35,7 @@
     "level": "expert",
     "style": "efficace",
     "tags": ["expert", "duo-only", "slow"],
-    "enabled": false
+    "enabled": true
   },
   {
     "id": "dqn_standard_v1",

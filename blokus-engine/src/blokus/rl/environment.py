@@ -197,12 +197,19 @@ class BlokusEnv(gym.Env):
             terminated = self.game.status == GameStatus.FINISHED
             truncated = self.step_count >= self.config.max_steps
             
+            info = self._get_info()
+            info.update({
+                "valid_action": True,
+                "forced_pass": True, 
+                "winner": self.game.get_winner() if terminated else None
+            })
+            
             return (
                 self._get_obs(),
                 0.0,  # Neutral reward for forced pass
                 terminated,
                 truncated,
-                {"valid_action": True, "forced_pass": True, "winner": self.game.get_winner() if terminated else None}
+                info
             )
         
         # Store previous state for reward computation
@@ -220,12 +227,17 @@ class BlokusEnv(gym.Env):
         
         if not valid_move:
             # Invalid action: heavy penalty and end episode
+            info = self._get_info()
+            info.update({
+                "valid_action": False,
+                "winner": None
+            })
             return (
                 self._get_obs(),
                 -10.0,  # Heavy penalty for invalid action
                 True,   # Terminated
                 False,  # Not truncated
-                {"valid_action": False, "winner": None}
+                info
             )
         
         # Update history

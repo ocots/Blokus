@@ -179,13 +179,56 @@ class AgentRegistry:
         
         if not model_path.exists():
             raise ValueError(f"Model file not found: {model_path}")
-        
-        # Import and load DQN agent (to be implemented)
-        # For now, raise NotImplementedError
-        raise NotImplementedError(
-            f"Model-based agents not yet implemented. "
-            f"Would load from: {model_path}"
-        )
+            
+        # Get board size from config or metadata, default to 14 (Duo) if not specified
+        # In a real scenario, this might be saved in the model checkpoint
+        board_size = 14
+        if metadata.config and "board_size" in metadata.config:
+            board_size = metadata.config["board_size"]
+            
+        try:
+            import torch
+            from blokus.rl.agents.dqn_agent import DQNAgent
+            
+            # Initialize agent with config
+            agent = DQNAgent(
+                board_size=board_size,
+                device="auto",
+                # Set epsilon to low value for evaluation/play
+                epsilon_start=0.05,
+                epsilon_end=0.05
+            )
+            
+            # Load weights
+            checkpoint = torch.load(model_path, map_location=agent.device)
+            
+            # Helper to cast tensors to float (in case we loaded a half-precision model)
+            def cast_to_float(obj):
+                if isinstance(obj, torch.Tensor):
+                    return obj.float()
+                elif isinstance(obj, dict):
+                    return {k: cast_to_float(v) for k, v in obj.items()}
+                else:
+                    return obj
+            
+            checkpoint = cast_to_float(checkpoint)
+            
+            # Handle different checkpoint formats (full checkpoint vs state_dict)
+            if "model_state_dict" in checkpoint:
+                agent.load_state_dict(checkpoint["model_state_dict"])
+            elif "online_net" in checkpoint:
+                agent.load_state_dict(checkpoint)
+            else:
+                # Assume raw state dict for online network
+                agent.online_net.load_state_dict(checkpoint)
+                
+            agent.eval_mode()
+            return agent
+            
+        except ImportError as e:
+            raise ImportError(f"Failed to import dependencies for model agent: {e}")
+        except Exception as e:
+            raise ValueError(f"Failed to load model from {model_path}: {e}")
     
     def reload(self) -> None:
         """Reload registry from disk."""
