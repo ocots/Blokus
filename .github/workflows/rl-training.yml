@@ -282,8 +282,8 @@ jobs:
           # Fetch latest remote state quietly to ensure we are up to date
           git fetch origin "$BRANCH_NAME" --quiet
           
-          # Add model artifacts
-          EXPERIMENT_DIR="blokus-engine/models/experiments/${{ needs.setup.outputs.experiment_name }}"
+          # Add model artifacts (use actual dir with timestamp)
+          EXPERIMENT_DIR="${{ needs.train.outputs.experiment_dir }}"
           git add "$EXPERIMENT_DIR"
 
           # Quick summary of staged files
