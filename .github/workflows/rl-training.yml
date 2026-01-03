@@ -181,6 +181,7 @@ jobs:
             --board-size "${{ needs.setup.outputs.board_size }}" \
             --episodes "${{ needs.setup.outputs.episodes }}" \
             --eval-freq "${{ needs.setup.outputs.eval_frequency }}" \
+            --log-freq 1 \
             --no-video
           
           METADATA_FILE="models/experiments/$EXP_NAME/metadata.json"
