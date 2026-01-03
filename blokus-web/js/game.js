@@ -468,8 +468,14 @@ export class Game {
             this._showGameOver();
         } else {
             // Start next player's turn (both AI and human)
-            logger.debug(`🔄 Sync done. Scheduling _startTurn for P${this._currentPlayer}...`);
-            setTimeout(() => this._startTurn(this._currentPlayer), 100);
+            // Use configurable delay: 0 in fastMode, 100ms otherwise
+            const turnDelay = this._settings.fastMode ? 0 : 100;
+            logger.debug(`🔄 Sync done. Scheduling _startTurn for P${this._currentPlayer} (delay=${turnDelay}ms)...`);
+            if (turnDelay > 0) {
+                setTimeout(() => this._startTurn(this._currentPlayer), turnDelay);
+            } else {
+                this._startTurn(this._currentPlayer);
+            }
         }
     }
 
