@@ -91,10 +91,10 @@ class TestPlacePiece:
     def test_place_out_of_bounds_fails(self):
         """Placing piece out of bounds should fail."""
         board = Board()
-        piece = get_piece(PieceType.I5)  # 5-long vertical piece (5 rows, 1 col)
+        piece = get_piece(PieceType.I5)  # 5-long horizontal piece (1 row, 5 cols)
         
-        # I5 vertical goes from row to row+4, so at row=16 it would go to row=20 (out of bounds)
-        result = board.place_piece(piece, 16, 0, player_id=0)
+        # I5 horizontal goes from col to col+4, so at col=16 it would go to col=20 (out of bounds)
+        result = board.place_piece(piece, 0, 16, player_id=0)
         
         assert result is False
         assert board.count_occupied() == 0

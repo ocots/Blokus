@@ -136,6 +136,10 @@ class Game:
         
         player = self.players[move.player_id]
         
+        # Check piece type is valid enum
+        if not isinstance(move.piece_type, PieceType):
+            return f"Invalid piece_type: {move.piece_type} (not a PieceType enum)"
+        
         # Check piece is available
         if move.piece_type not in player.remaining_pieces:
             return f"Piece {move.piece_type.name} not in remaining pieces"

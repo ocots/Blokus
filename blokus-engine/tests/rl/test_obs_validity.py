@@ -74,8 +74,8 @@ class TestObservationContent:
         game = Game(num_players=2)
         
         # Place I2 (domino) at (0,0) for player 0
-        # I2 orientation 1 is horizontal: occupies (0,0) and (0,1)
-        move = Move(player_id=0, piece_type=PieceType.I2, orientation=ORIENTATION_HORIZONTAL, row=0, col=0)
+        # I2 orientation 0 is horizontal: occupies (0,0) and (0,1)
+        move = Move(player_id=0, piece_type=PieceType.I2, orientation=0, row=0, col=0)
         game.play_move(move)
         
         obs = create_observation(game)
