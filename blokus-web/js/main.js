@@ -11,7 +11,6 @@ import { SetupManager } from './setup.js';
 import { AppStateManager, APP_STATE } from './state.js';
 import { logger } from './logger.js';
 import * as api from './api.js';
-// import { initAIAnimationStyles } from './ai/ai-animator.js'; // REMOVED
 import { VERSION, logVersion } from './version.js';
 
 /** @type {Game|null} */
@@ -209,7 +208,10 @@ async function launchGame(config, isApiAvailable) {
                 config.playerCount,
                 config.startPlayer,
                 config.players,
-                { twoPlayerMode: config.twoPlayerMode }
+                {
+                    twoPlayerMode: config.twoPlayerMode,
+                    settings: config.settings
+                }
             );
 
             // Sync initial state

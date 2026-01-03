@@ -51,9 +51,12 @@ export class Game {
 
         // Settings
         this._settings = config.settings || {};
+        logger.debug(`⚙️ Game Settings received:`, JSON.stringify(this._settings));
+
         if (this._settings.fastMode === undefined) {
             this._settings.fastMode = false; // Default to normal speed (with 100ms delay)
         }
+        logger.debug(`⚙️ Final fastMode state: ${this._settings.fastMode}`);
 
         this._init();
     }
@@ -183,14 +186,13 @@ export class Game {
         const aiOptions = {
             fastMode: this._settings.fastMode ?? false
         };
-
         for (let i = 0; i < this._numPlayers; i++) {
             const stateMachine = new PlayerStateMachine();
             this._playerStates.push(stateMachine);
 
             // Setup AI controller if player is AI
             if (this._isAIPlayer(i)) {
-                logger.debug(`🤖 Creating AI Controller for P${i}`);
+                logger.debug(`🤖 Creating AI Controller for P${i} (options: ${JSON.stringify(aiOptions)})`);
                 const aiController = AIFactory.createController(
                     this._useApi, 
                     this._apiClient,

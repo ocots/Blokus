@@ -82,7 +82,8 @@ export async function createGame(numPlayers = 4, startPlayer = 0, players = null
         num_players: numPlayers,
         start_player: startPlayer,
         ...options.twoPlayerMode && { two_player_mode: options.twoPlayerMode },
-        ...options.boardSize && { board_size: options.boardSize }
+        ...options.boardSize && { board_size: options.boardSize },
+        ...options.settings && { settings: options.settings }
     };
     
     // Include player configurations if provided

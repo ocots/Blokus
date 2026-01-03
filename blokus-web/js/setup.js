@@ -89,6 +89,17 @@ export class SetupManager {
             });
         }
 
+        // Fast AI Mode toggle
+        const fastAIModeCheckbox = document.getElementById('fast-ai-mode');
+        if (fastAIModeCheckbox) {
+            fastAIModeCheckbox.checked = state.fastMode;
+            fastAIModeCheckbox.addEventListener('change', (e) => {
+                this.store.update({ fastMode: e.target.checked });
+            });
+        }
+
+        this.updateFastAIModeVisibility();
+
         // Start Player Select
         const startSelect = document.getElementById('start-player-select');
         if (startSelect) {
@@ -124,6 +135,7 @@ export class SetupManager {
         }
 
         this.renderPlayerInputs();
+        this.updateFastAIModeVisibility();
     }
 
     renderPlayerInputs() {
@@ -157,6 +169,7 @@ export class SetupManager {
                 const isAI = newType === 'ai';
                 nameInput.style.display = isAI ? 'none' : 'block';
                 personaSelect.style.display = isAI ? 'block' : 'none';
+                this.updateFastAIModeVisibility();
             });
 
             // Input Wrapper for Name/Persona (Right side)
@@ -275,7 +288,8 @@ export class SetupManager {
             startPlayer: startPlayer,
             twoPlayerMode: (count === 2) ? state.twoPlayerMode : null,
             settings: {
-                colorblindMode: state.colorblindMode
+                colorblindMode: state.colorblindMode,
+                fastMode: state.fastMode
             }
         };
 
@@ -285,6 +299,18 @@ export class SetupManager {
 
     show() {
         this.modal.classList.remove('hidden');
+    }
+
+    updateFastAIModeVisibility() {
+        const container = document.getElementById('fast-ai-mode-container');
+        if (!container) return;
+
+        const players = this.store.getState().players;
+        const count = this.store.getState().playerCount;
+        const activePlayers = players.slice(0, count);
+        const hasAI = activePlayers.some(p => p.type === 'ai');
+
+        container.style.display = hasAI ? 'block' : 'none';
     }
 }
 

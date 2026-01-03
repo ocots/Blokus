@@ -14,7 +14,8 @@ class MockBoard {
     isValidPlacement() { return true; }
     placePiece() { }
     setColorblindMode() { }
-    getPlayerCorners() { return []; }
+    getPlayerCorners() { return [[0, 0]]; }
+    init() { }
 }
 
 class MockControls {
@@ -41,6 +42,9 @@ describe('Game Logic', () => {
             <div id="name-2" class="score-label"></div>
             <div id="score-3" class="score-value"></div>
             <div id="name-3" class="score-label"></div>
+            <div id="game-over-modal" class="hidden">
+                <div id="final-scores"></div>
+            </div>
         `;
 
         board = new MockBoard();
@@ -48,10 +52,10 @@ describe('Game Logic', () => {
         config = {
             playerCount: 4,
             players: [
-                { name: 'P1', type: 'human', id: 0, remainingPieces: new Set() },
-                { name: 'P2', type: 'human', id: 1, remainingPieces: new Set() },
-                { name: 'P3', type: 'human', id: 2, remainingPieces: new Set() },
-                { name: 'P4', type: 'human', id: 3, remainingPieces: new Set() }
+                { name: 'P1', type: 'human', id: 0, remainingPieces: new Set(['I1']) },
+                { name: 'P2', type: 'human', id: 1, remainingPieces: new Set(['I1']) },
+                { name: 'P3', type: 'human', id: 2, remainingPieces: new Set(['I1']) },
+                { name: 'P4', type: 'human', id: 3, remainingPieces: new Set(['I1']) }
             ],
             settings: { colorblindMode: false }
         };

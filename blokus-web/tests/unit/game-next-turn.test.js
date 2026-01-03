@@ -1,10 +1,9 @@
 /**
- * Game._nextTurn() Unit Tests
- * 
- * Tests for the _nextTurn method which manages turn progression
- * 
- * @module tests/unit/game-next-turn.test.js
+ * @jest-environment jsdom
  */
+
+import { jest, describe, test, expect, beforeEach } from '@jest/globals';
+import { Game } from '../../js/game.js';
 
 describe('Game._nextTurn()', () => {
     let game;

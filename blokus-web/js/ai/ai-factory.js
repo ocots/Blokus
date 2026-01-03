@@ -2,7 +2,6 @@
  * AI Factory
  * 
  * Factory Pattern for creating AI controllers with appropriate strategies
- * Follows OCP: Easy to add new AI types without modifying this code
  * 
  * @module ai/ai-factory
  */
@@ -19,16 +18,16 @@ export class AIFactory {
     /**
      * Create AI controller based on mode
      * @param {boolean} useApi - Whether to use API mode
-     * @param {Object|null} apiClient - API client instance (required if useApi is true)
-     * @param {Object} options - Optional configuration
+     * @param {Object|null} apiClient - API client instance
+     * @param {Object} options - Optional configuration (e.g. fastMode)
      * @returns {AIController}
      */
-    static createController(useApi, apiClient = null, options = {}) {
+    static createController(useApi, apiClient, options = {}) {
         const strategy = useApi
             ? new APIAIStrategy(apiClient)
             : new LocalAIStrategy();
         
-        return new AIController(strategy);
+        return new AIController(strategy, options);
     }
 
     /**
@@ -37,7 +36,7 @@ export class AIFactory {
      * @returns {AIController}
      */
     static createLocalController(options = {}) {
-        return new AIController(new LocalAIStrategy());
+        return new AIController(new LocalAIStrategy(), options);
     }
 
     /**
@@ -47,6 +46,6 @@ export class AIFactory {
      * @returns {AIController}
      */
     static createAPIController(apiClient, options = {}) {
-        return new AIController(new APIAIStrategy(apiClient));
+        return new AIController(new APIAIStrategy(apiClient), options);
     }
 }

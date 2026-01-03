@@ -1,13 +1,14 @@
 /**
  * AI Controller
  * 
- * Single Responsibility: Orchestrate AI turns
- * Follows DIP: Depends on AIStrategy abstraction, not concrete implementations
+ * Orchestrates AI player turns by getting a move from a strategy
+ * and playing it after a configurable delay.
  * 
  * @module ai/ai-controller
  */
 
 import { PlayerState } from '../state/player-state.js';
+import { logger } from '../logger.js';
 
 /**
  * AI Controller
@@ -16,19 +17,22 @@ import { PlayerState } from '../state/player-state.js';
 export class AIController {
     /**
      * Create AI controller
-     * @param {AIStrategy} aiStrategy - AI strategy instance (dependency injection)
+     * @param {AIStrategy} aiStrategy - AI strategy instance
+     * @param {Object} options - Configuration options
      */
-    constructor(aiStrategy) {
+    constructor(aiStrategy, options = {}) {
         this._strategy = aiStrategy;
         this._isExecuting = false;
+        this._thinkDelay = options.fastMode ? 0 : (options.thinkDelay || 500);
+        console.log(`🤖 AIController initialized with thinkDelay=${this._thinkDelay}ms (fastMode=${options.fastMode})`);
     }
 
     /**
-     * Set fast mode (kept for compatibility, does nothing now as everything is fast)
+     * Set fast mode
      * @param {boolean} enabled
      */
     setFastMode(enabled) {
-        // No-op
+        this._thinkDelay = enabled ? 0 : 500;
     }
 
     /**
@@ -38,10 +42,7 @@ export class AIController {
      * @returns {Promise<void>}
      */
     async executeTurn(gameContext, playerState) {
-        if (this._isExecuting) {
-            console.warn('AI turn already executing');
-            return;
-        }
+        if (this._isExecuting) return;
 
         try {
             this._isExecuting = true;
@@ -49,55 +50,47 @@ export class AIController {
             // Transition to thinking state
             playerState.startAIThinking();
             
-            console.log(`🤖 AI Player ${gameContext.playerId} thinking...`);
-            
+            logger.debug(`🤖 AI Player ${gameContext.playerId} calculating... (thinkDelay=${this._thinkDelay}ms)`);
+
+            // Get move from strategy
+            const move = await this._strategy.getMove(gameContext);
+
+            // Optional "thinking" delay for UX (unless fast mode)
+            if (this._thinkDelay > 0) {
+                await new Promise(resolve => setTimeout(resolve, this._thinkDelay));
+            }
+
             // Transition to playing state
             playerState.startAIPlaying();
-            
-            // Get move from strategy (OCP: any strategy works)
-            let move = null;
-            try {
-                move = await this._strategy.getMove(gameContext);
-            } catch (e) {
-                console.error("Strategy error:", e);
-                move = null;
-            }
-            
-            if (move) {
-                console.log(`🤖 AI plays: ${move.piece.type} at (${move.row}, ${move.col})`);
 
-                // playMove can return boolean (local) or Promise (API)
+            if (move) {
+                logger.debug(`🤖 AI plays: ${move.piece.type} at (${move.row}, ${move.col})`);
                 const result = gameContext.playMove(move.piece, move.row, move.col);
                 if (result instanceof Promise) {
                     await result;
                 }
             } else {
-                console.log(`🤖 AI Player ${gameContext.playerId} has no valid moves, passing...`);
-                // passTurn can return boolean (local) or Promise (API)
+                logger.debug(`🤖 AI Player ${gameContext.playerId} passing...`);
                 const result = gameContext.passTurn();
                 if (result instanceof Promise) {
                     await result;
                 }
             }
-
-            // Deactivate player
-            playerState.deactivate();
-            
         } catch (error) {
             console.error('🤖 AI turn failed:', error);
-            
-            // Fallback: pass turn
+            // Fallback: try to pass turn so game doesn't hang
             try {
                 const passResult = gameContext.passTurn();
                 if (passResult instanceof Promise) {
                     await passResult;
                 }
-                playerState.deactivate();
             } catch (passError) {
-                console.error('🤖 Failed to pass turn:', passError);
+                console.error('🤖 Fallback pass failed:', passError);
             }
         } finally {
             this._isExecuting = false;
+            // Deactivate player state
+            playerState.deactivate();
         }
     }
 

@@ -13,6 +13,7 @@ export class SettingsStore {
             twoPlayerMode: 'duo', // 'duo' | 'standard'
             startPlayer: 'random', // 'random' | 0 | 1 | 2 | 3
             colorblindMode: false,
+            fastMode: false,
             players: this._createDefaultPlayers(4),
             ...initialState
         };
@@ -70,6 +71,7 @@ export class SettingsStore {
         if (partialState.twoPlayerMode) nextState.twoPlayerMode = partialState.twoPlayerMode;
         if (partialState.startPlayer !== undefined) nextState.startPlayer = partialState.startPlayer; // check undefined for 0 value
         if (typeof partialState.colorblindMode === 'boolean') nextState.colorblindMode = partialState.colorblindMode;
+        if (typeof partialState.fastMode === 'boolean') nextState.fastMode = partialState.fastMode;
 
         this.state = nextState;
         this._notify();

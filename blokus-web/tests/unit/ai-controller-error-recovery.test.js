@@ -1,12 +1,8 @@
 /**
- * AIController Error Recovery Unit Tests
- * 
- * Tests for error handling and recovery in AI controller
- * Ensures graceful degradation when errors occur
- * 
- * @module tests/unit/ai-controller-error-recovery.test.js
+ * @jest-environment jsdom
  */
 
+import { jest, describe, test, expect, beforeEach } from '@jest/globals';
 import { AIController } from '../../js/ai/ai-controller.js';
 import { PlayerStateMachine } from '../../js/state/player-state.js';
 

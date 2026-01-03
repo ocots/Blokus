@@ -34,6 +34,9 @@ describe('SetupManager', () => {
             <button class="mode-btn" data-mode="duo"></button>
             <button class="mode-btn" data-mode="standard"></button>
             <input type="checkbox" id="colorblind-mode">
+            <div id="fast-ai-mode-container" style="display: none;">
+                <input type="checkbox" id="fast-ai-mode">
+            </div>
         `;
 
         // Clear localStorage before each test
@@ -88,5 +91,13 @@ describe('SetupManager', () => {
         expect(saved.data.twoPlayerMode).toBe('standard');
 
         jest.useRealTimers();
+    });
+
+    test('should pass fastMode to config and persist it', () => {
+        setupManager.store.update({ fastMode: true });
+        setupManager.startGame();
+
+        const config = onStartGame.mock.calls[0][0];
+        expect(config.settings.fastMode).toBe(true);
     });
 });

@@ -81,6 +81,7 @@ class CreateGameRequest(BaseModel):
     start_player: Optional[int] = None
     two_player_mode: Optional[str] = None # 'duo' or 'classic'
     board_size: Optional[int] = None
+    settings: Optional[Dict] = None
 
     
     @field_validator('start_player')

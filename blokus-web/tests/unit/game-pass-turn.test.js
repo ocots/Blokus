@@ -1,10 +1,9 @@
 /**
- * Game.passTurn() Unit Tests
- * 
- * Tests for the passTurn method which validates player has no valid moves
- * 
- * @module tests/unit/game-pass-turn.test.js
+ * @jest-environment jsdom
  */
+
+import { jest, describe, test, expect, beforeEach } from '@jest/globals';
+import { Game } from '../../js/game.js';
 
 describe('Game.passTurn()', () => {
     let game;

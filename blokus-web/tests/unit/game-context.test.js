@@ -1,11 +1,9 @@
 /**
- * GameContext Dependency Injection Unit Tests
- * 
- * Tests for GameContext object passed to AI strategies
- * Ensures all required methods exist and are callable
- * 
- * @module tests/unit/game-context.test.js
+ * @jest-environment jsdom
  */
+
+import { jest, describe, test, expect, beforeEach } from '@jest/globals';
+import { Game } from '../../js/game.js';
 
 describe('GameContext Dependency Injection', () => {
     let game;
