@@ -56,6 +56,8 @@ jobs:
       board_size: ${{ steps.params.outputs.board_size }}
       episodes: ${{ steps.params.outputs.episodes }}
       eval_frequency: ${{ steps.params.outputs.eval_frequency }}
+      eval_games: ${{ steps.params.outputs.eval_games }}
+      log_frequency: ${{ steps.params.outputs.log_frequency }}
       resume: ${{ steps.params.outputs.resume }}
       
     steps:
@@ -71,6 +73,9 @@ jobs:
             echo "episodes=${{ inputs.episodes }}" >> "$GITHUB_OUTPUT"
             echo "eval_frequency=${{ inputs.eval_frequency }}" >> "$GITHUB_OUTPUT"
             echo "resume=${{ inputs.resume }}" >> "$GITHUB_OUTPUT"
+            # Default values for manual inputs (could be added to inputs later)
+            echo "eval_games=100" >> "$GITHUB_OUTPUT"
+            echo "log_frequency=100" >> "$GITHUB_OUTPUT"
           else
             # Triggered by push to training_queue.json
             echo "Reading from training_queue.json"
@@ -80,12 +85,16 @@ jobs:
             BOARD_SIZE=$(jq -r '.queue[0].board_size // 14' $JSON_FILE)
             EPISODES=$(jq -r '.queue[0].episodes // 10000' $JSON_FILE)
             EVAL_FREQ=$(jq -r '.queue[0].eval_frequency // 500' $JSON_FILE)
+            EVAL_GAMES=$(jq -r '.queue[0].eval_games // 100' $JSON_FILE)
+            LOG_FREQ=$(jq -r '.queue[0].log_frequency // 100' $JSON_FILE)
             RESUME=$(jq -r '.queue[0].resume // false' $JSON_FILE)
             
             echo "experiment_name=$EXP_NAME" >> "$GITHUB_OUTPUT"
             echo "board_size=$BOARD_SIZE" >> "$GITHUB_OUTPUT"
             echo "episodes=$EPISODES" >> "$GITHUB_OUTPUT"
             echo "eval_frequency=$EVAL_FREQ" >> "$GITHUB_OUTPUT"
+            echo "eval_games=$EVAL_GAMES" >> "$GITHUB_OUTPUT"
+            echo "log_frequency=$LOG_FREQ" >> "$GITHUB_OUTPUT"
             echo "resume=$RESUME" >> "$GITHUB_OUTPUT"
           fi
 
@@ -191,8 +200,8 @@ jobs:
             --board-size "${{ needs.setup.outputs.board_size }}" \
             --episodes "${{ needs.setup.outputs.episodes }}" \
             --eval-freq "${{ needs.setup.outputs.eval_frequency }}" \
-            --eval-games 10 \
-            --log-freq 1 \
+            --eval-games "${{ needs.setup.outputs.eval_games }}" \
+            --log-freq "${{ needs.setup.outputs.log_frequency }}" \
             --no-video
           
           METADATA_FILE="models/experiments/$EXP_NAME/metadata.json"
