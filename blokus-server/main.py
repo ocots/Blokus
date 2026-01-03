@@ -298,7 +298,28 @@ def pass_turn():
 def reset_game():
     global game_instance
     if game_instance:
-        game_instance = Game(num_players=game_instance.num_players)
+        # Preserve configuration: board size and players
+        old_board_size = game_instance.board.size
+        
+        # Re-create players with same config
+        player_configs = []
+        for p in game_instance.players:
+            config = {
+                "id": p.id,
+                "name": p.name,
+                "type": p.type.value,
+            }
+            if p.persona:
+                config["persona"] = p.persona
+            player_configs.append(config)
+            
+        # Use factory to re-create manager
+        # If it was a standard 2P game (4 colors), we should ideally handle that
+        # but create_from_config is a good general fallback.
+        # Check if it was a 4-player game with 2 real players but that info is mostly in the manager type
+        
+        game_manager = GameManagerFactory.create_from_config(player_configs)
+        game_instance = Game(game_manager=game_manager, board=Board(size=old_board_size))
     else:
         game_instance = Game()
     return map_game_to_state(game_instance)

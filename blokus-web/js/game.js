@@ -457,13 +457,12 @@ export class Game {
         } else {
             // Start next player's turn (both AI and human)
             // Use configurable delay: 0 in fastMode, 100ms otherwise
+            // CRITICAL: Always use setTimeout (even with 0ms) to allow the current execution
+            // stack to finish. This prevents a deadlock in AIController where _isExecuting
+            // remains true during recursive calls.
             const turnDelay = this._settings.fastMode ? 0 : 100;
             logger.debug(`🔄 Sync done. Scheduling _startTurn for P${this._currentPlayer} (delay=${turnDelay}ms)...`);
-            if (turnDelay > 0) {
-                setTimeout(() => this._startTurn(this._currentPlayer), turnDelay);
-            } else {
-                this._startTurn(this._currentPlayer);
-            }
+            setTimeout(() => this._startTurn(this._currentPlayer), turnDelay);
         }
     }
 

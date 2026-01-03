@@ -17,7 +17,7 @@ const LevelNames = ['DEBUG', 'INFO', 'API', 'WARN', 'ERROR', 'NONE'];
 
 class Logger {
     constructor() {
-        this.level = LogLevel.NONE; // Default level show all
+        this.level = LogLevel.DEBUG; // Default level show all
 
         // Try load from local storage
         try {
