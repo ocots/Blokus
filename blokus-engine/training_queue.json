@@ -3,7 +3,7 @@
     {
       "experiment_name": "duo_v1_run1",
       "board_size": 14,
-      "episodes": 20,
+      "episodes": 2,
       "eval_frequency": 5,
       "eval_games": 20,
       "log_frequency": 1,
