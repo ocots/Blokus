@@ -35,7 +35,7 @@ The **Player System** is a unified architecture for managing players and game tu
 
 1. **Eliminate Fragmentation**: Consolidate player logic in one place
 2. **Follow SOLID Principles**: Clean, maintainable architecture
-3. **Support All Player Types**: Human, AI, Shared (3-player mode)
+3. **Support All Player Types**: Human, AI
 4. **Enable State Machines**: Foundation for future state machine implementation
 5. **Maintain Backward Compatibility**: Existing code continues to work
 
@@ -112,7 +112,6 @@ Defines all enums used in the player system:
 class PlayerType(Enum):
     HUMAN = "human"      # Human player
     AI = "ai"            # AI player
-    SHARED = "shared"    # Shared player (3-player mode)
 ```
 
 #### PlayerStatus
@@ -335,7 +334,6 @@ class GameManagerFactory:
 ├─────────────────────┤
 │ + HUMAN             │
 │ + AI                │
-│ + SHARED            │
 └─────────────────────┘
          △
          │ uses
@@ -361,7 +359,6 @@ class GameManagerFactory:
 ├──────────────────────────────────────────────┤
 │ + is_human: bool                             │
 │ + is_ai: bool                                │
-│ + is_shared: bool                            │
 │ + display_name: str                          │
 └──────────────────────────────────────────────┘
          △
@@ -536,23 +533,7 @@ game = Game(game_manager=game_manager)
 # - Aggressive AI (Red)
 ```
 
-### Example 3: 3-Player Game with Shared Player
-
-```python
-player_configs = [
-    {"id": 0, "name": "Alice", "type": "human"},
-    {"id": 1, "name": "Bob", "type": "human"},
-    {"id": 2, "name": "Charlie", "type": "human"},
-    {"id": 3, "type": "shared"}  # Shared 4th player
-]
-
-game_manager = GameManagerFactory.create_from_config(player_configs)
-game = Game(game_manager=game_manager)
-
-# The shared player is controlled by the 3 human players in rotation
-```
-
-### Example 4: Accessing Player Information
+### Example 3: Accessing Player Information
 
 ```python
 # Get all players

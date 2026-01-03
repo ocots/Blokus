@@ -12,11 +12,13 @@ Blokus RL is a professional-grade implementation of the strategic board game Blo
 
 ## ✨ Features
 
-- 🎮 **Complete Game Implementation**: Full Blokus rules with 2-4 player support
-- 🤖 **AI Players**: Multiple AI personas (Random, Aggressive, Defensive, Efficient)
+- 🎮 **Complete Game Implementation**: Full Blokus rules with 2 and 4 player support (including Blokus Duo and Standard modes)
+- 🤖 **AI Players**: Multiple AI personas with adjustable speed (Fast Mode)
 - 🧠 **Reinforcement Learning**: OpenAI Gym-compatible environment for training
 - 🌐 **REST API**: FastAPI server with comprehensive endpoints
 - 💻 **Modern Web UI**: Responsive interface with intuitive controls
+- 💾 **Persistent Settings**: Player names, colors, and game preferences are automatically saved
+- ⏪ **Replay System**: Review games with step-by-step controls and variable speed
 - 🏗️ **SOLID Architecture**: Clean, maintainable, and extensible codebase
 - ✅ **Fully Tested**: 266 tests with 99.3% coverage
 - 📚 **Professional Documentation**: Complete guides and tutorials
@@ -65,7 +67,7 @@ python -m http.server 5500
 
 The project follows a modular, layered architecture:
 
-```
+```text
 ┌─────────────────────────────────────────────────────────┐
 │                    Blokus RL System                      │
 ├─────────────────────────────────────────────────────────┤
@@ -182,7 +184,7 @@ We welcome contributions! Please see our [Contributing Guide](docs/CONTRIBUTING.
 
 ## 📊 Project Status
 
-- [Règles détaillées](docs/rules.md)
+- [Règles détaillées (2 & 4 joueurs)](docs/rules.md)
 - [Guide d'entraînement d'IA](docs/training_guide.md)
 - [Décisions de Design](docs/design_decisions.md)
 - [Feuille de route (Roadmap)](docs/implementation_roadmap.md)

@@ -87,3 +87,25 @@ Historique des choix techniques et leur justification.
 - [ ] Taille exacte du réseau (64 vs 128 filtres)
 - [ ] Durée d'entraînement Phase 1
 - [ ] Métriques de validation
+
+---
+
+## 2026-01-03 : Modes de Jeu & Affinement
+
+### Modes 2 Joueurs Distincts
+
+| Mode | Configuration | Justification |
+|------|---------------|---------------|
+| **Blokus Duo** | 14x14, 1 couleur/joueur, départ centre | Règles officielles Duo, parties plus rapides/tendues. |
+| **Blokus Standard (2P)** | 20x20, 2 couleurs/joueur, départ coins | Respect des règles officielles classiques 2P. Plus stratégique. |
+
+### Suppression du Mode 3 Joueurs
+
+| Décision | Justification |
+|----------|---------------|
+| **Suppression Complète** | Le mode 3 joueurs nécessite des règles ad-hoc (couleur neutre ou asymétrie) qui complexifient l'implémentation et l'apprentissage RL sans apporter de valeur significative par rapport aux modes 2 et 4 joueurs. |
+
+### Persistence & Replay
+
+- **Persistence** : Utilisation du `LocalStorage` avec Observer Pattern pour sauvegarder les préférences utilisateur (noms, couleurs, mode rapide) sans couplage fort.
+- **Replay** : Système de replay deterministic basé sur l'historique des coups, permettant de rejouer des parties complètes (utile pour débug et analyse).

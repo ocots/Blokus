@@ -170,4 +170,4 @@ Phase 2 ──┘
 | Phase 3-3.8 | 3 jours | ✅ TERMINÉ |
 | Phase 4 | 2 jours | ✅ TERMINÉ |
 | Phase 5 | 5 jours (implémentation + tests) | ✅ TERMINÉ (Socle) |
-| Phase 6 | 1 jour | 🚧 À faire |
+| Phase 6 | 1 jour | ✅ TERMINÉ |
