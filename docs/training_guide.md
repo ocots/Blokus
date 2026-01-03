@@ -61,13 +61,17 @@ Une plateforme d'entraînement automatisée est disponible dans GitHub Actions. 
 ### Méthode A : Lancement Manuel (Dispatch)
 
 1. Allez sur GitHub → **Actions** → **RL Training**.
-2. Cliquez sur **"Run workflow"**.
-3. Remplissez le formulaire (Nom, Taille, Épisodes, etc.).
-4. Cochez **"Resume"** si vous voulez continuer une session passée.
+2. Sélectionnez la **branche d'expérience** (ex: `xp/duo-v1`) sur laquelle vous travaillez.
+3. Cliquez sur **"Run workflow"**.
+4. Remplissez le formulaire (Nom, Taille, Épisodes, etc.).
+5. Cochez **"Resume"** si vous voulez continuer une session passée.
 
 ### Méthode B : Lancement par "Queue" (Push)
 
-Vous pouvez déclencher un entraînement en modifiant le fichier `blokus-engine/training_queue.json` sur `main` :
+C'est la méthode recommandée ("Training Branch Pattern").
+
+1. Créez une branche dédiée (ex: `xp/duo-test-run`).
+2. Modifiez le fichier `blokus-engine/training_queue.json` sur cette branche :
 
 ```json
 {
@@ -82,15 +86,18 @@ Vous pouvez déclencher un entraînement en modifiant le fichier `blokus-engine/
 }
 ```
 
-Un simple `git push` de ce fichier lancera l'entraînement.
+1. Commitez et pushez : `git commit -am "config: start training" && git push`
 
-### Résultat : Une Pull Request Automatique
+### Résultat : Commit Automatique (Loop)
 
-Une fois l'entraînement fini, le workflow :
+Une fois l'entraînement fini, le workflow **commite directement les résultats sur votre branche** :
 
-1. Sauvegarde le modèle (`.pt`) et les métadonnées.
-2. Enregistre automatiquement l'IA dans `blokus-engine/models/registry.json`.
-3. **Crée une Pull Request** avec les résultats. Une fois fusionnée, l'IA devient disponible dans le jeu !
+1. `model.pt` : Le modèle optimisé pour l'inférence (FP16, ~50Mo).
+2. `metrics.csv` : L'historique de l'apprentissage.
+3. `training_plot.png` : Un graphique visualisant la progression.
+4. `metadata.json` : L'état pour une reprise future.
+
+Vous n'avez plus qu'à faire un `git pull` pour récupérer les résultats. Si vous voulez continuer, changez juste le JSON (`episodes` + `resume: true`) et repushez.
 
 ---
 
