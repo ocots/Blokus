@@ -58,6 +58,7 @@ jobs:
       eval_frequency: ${{ steps.params.outputs.eval_frequency }}
       eval_games: ${{ steps.params.outputs.eval_games }}
       log_frequency: ${{ steps.params.outputs.log_frequency }}
+      min_buffer_size: ${{ steps.params.outputs.min_buffer_size }}
       resume: ${{ steps.params.outputs.resume }}
       
     steps:
@@ -76,6 +77,7 @@ jobs:
             # Default values for manual inputs (could be added to inputs later)
             echo "eval_games=100" >> "$GITHUB_OUTPUT"
             echo "log_frequency=100" >> "$GITHUB_OUTPUT"
+            echo "min_buffer_size=10000" >> "$GITHUB_OUTPUT"
           else
             # Triggered by push to training_queue.json
             echo "Reading from training_queue.json"
@@ -87,6 +89,7 @@ jobs:
             EVAL_FREQ=$(jq -r '.queue[0].eval_frequency // 500' $JSON_FILE)
             EVAL_GAMES=$(jq -r '.queue[0].eval_games // 100' $JSON_FILE)
             LOG_FREQ=$(jq -r '.queue[0].log_frequency // 100' $JSON_FILE)
+            MIN_BUFFER=$(jq -r '.queue[0].min_buffer_size // 10000' $JSON_FILE)
             RESUME=$(jq -r '.queue[0].resume // false' $JSON_FILE)
             
             echo "experiment_name=$EXP_NAME" >> "$GITHUB_OUTPUT"
@@ -95,6 +98,7 @@ jobs:
             echo "eval_frequency=$EVAL_FREQ" >> "$GITHUB_OUTPUT"
             echo "eval_games=$EVAL_GAMES" >> "$GITHUB_OUTPUT"
             echo "log_frequency=$LOG_FREQ" >> "$GITHUB_OUTPUT"
+            echo "min_buffer_size=$MIN_BUFFER" >> "$GITHUB_OUTPUT"
             echo "resume=$RESUME" >> "$GITHUB_OUTPUT"
           fi
 
@@ -140,6 +144,7 @@ jobs:
     
     outputs:
       experiment_name: ${{ needs.setup.outputs.experiment_name }}
+      experiment_dir: ${{ steps.train.outputs.experiment_dir }}
       training_success: ${{ steps.train.outputs.success }}
       best_win_rate: ${{ steps.train.outputs.best_win_rate }}
     
@@ -202,9 +207,14 @@ jobs:
             --eval-freq "${{ needs.setup.outputs.eval_frequency }}" \
             --eval-games "${{ needs.setup.outputs.eval_games }}" \
             --log-freq "${{ needs.setup.outputs.log_frequency }}" \
-            --no-video
+            --min-buffer "${{ needs.setup.outputs.min_buffer_size }}" \
+            --no-video | tee training_output.txt
           
-          METADATA_FILE="models/experiments/$EXP_NAME/metadata.json"
+          # Extract the actual experiment directory from output
+          ACTUAL_EXP_DIR=$(grep "EXPERIMENT_DIR=" training_output.txt | cut -d'=' -f2)
+          echo "experiment_dir=$ACTUAL_EXP_DIR" >> $GITHUB_OUTPUT
+          
+          METADATA_FILE="$ACTUAL_EXP_DIR/metadata.json"
           if [ -f "$METADATA_FILE" ]; then
             BEST_WIN_RATE=$(python -c "import json; print(json.load(open('$METADATA_FILE'))['best_win_rate'])")
             echo "best_win_rate=$BEST_WIN_RATE" >> $GITHUB_OUTPUT
@@ -213,28 +223,30 @@ jobs:
           fi
           echo "success=true" >> $GITHUB_OUTPUT
 
-      - name: � Generate training plot
+      - name: 📊 Generate training plot
         if: steps.train.outputs.success == 'true'
         working-directory: blokus-engine
+        env:
+          EXP_DIR: ${{ steps.train.outputs.experiment_dir }}
         run: |
-          METRICS_FILE="models/experiments/$EXP_NAME/metrics.csv"
-          PLOT_FILE="models/experiments/$EXP_NAME/training_plot.png"
+          METRICS_FILE="$EXP_DIR/metrics.csv"
+          PLOT_FILE="$EXP_DIR/training_plot.png"
           if [ -f "$METRICS_FILE" ]; then
              python scripts/plot_metrics.py "$METRICS_FILE" "$PLOT_FILE"
           fi
 
-      - name: �📦 Upload training artifacts
+      - name: 📦 Upload training artifacts
         if: steps.train.outputs.success == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: training-results-${{ needs.setup.outputs.experiment_name }}
-          path: blokus-engine/models/experiments/${{ needs.setup.outputs.experiment_name }}/
+          path: ${{ steps.train.outputs.experiment_dir }}/
 
   # ─────────────────────────────────────────────────────────────
   # Commit Results
   # ─────────────────────────────────────────────────────────────
   commit-results:
-    name: � Commit Results
+    name: 💾 Commit Results
     runs-on: ubuntu-latest
     needs: [setup, train]
     if: needs.train.outputs.training_success == 'true'
@@ -248,7 +260,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: training-results-${{ needs.setup.outputs.experiment_name }}
-          path: blokus-engine/models/experiments/${{ needs.setup.outputs.experiment_name }}/
+          path: ${{ needs.train.outputs.experiment_dir }}/
 
       - name: 💾 Commit and Push
         if: needs.train.outputs.training_success == 'true'

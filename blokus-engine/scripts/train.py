@@ -323,7 +323,8 @@ def train(
         
         print(f"\nTraining complete!")
         print(f"Final win rate: {best_win_rate:.1%}")
-        print(f"Checkpoint saved to: {checkpoint_manager.experiment_dir}")
+        print(f"Checkpoint saved to: {config.get_experiment_dir()}")
+        print(f"EXPERIMENT_DIR={config.get_experiment_dir()}")  # For CI to capture
 
 
 def main():
