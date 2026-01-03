@@ -150,8 +150,18 @@ jobs:
         working-directory: blokus-engine
         run: |
           python -m pip install --upgrade pip
-          pip install numpy gymnasium torch tensorboard
-          echo "✅ Basic dependencies installed"
+          
+          # Check for NVIDIA GPU
+          if command -v nvidia-smi &> /dev/null; then
+            echo "🎮 GPU detected, installing standard PyTorch..."
+            pip install numpy gymnasium torch tensorboard
+          else
+            echo "🖥️ No GPU detected (or GitHub runner), installing CPU-only PyTorch..."
+            pip install torch --index-url https://download.pytorch.org/whl/cpu
+            pip install numpy gymnasium tensorboard
+          fi
+          
+          echo "✅ Dependencies installed"
 
       - name: 🔧 Configure for GPU (if available)
         if: needs.setup.outputs.runner_type == 'self-hosted'
