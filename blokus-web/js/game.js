@@ -714,14 +714,45 @@ export class Game {
         const scoresDiv = document.getElementById('final-scores');
 
         const scores = this.getScores();
-        const rankings = [...scores.keys()].sort((a, b) => scores[b] - scores[a]);
+        const isStandard2P = this._config.twoPlayerMode === 'standard' && this._config.playerCount === 2;
 
-        scoresDiv.innerHTML = rankings.map((i, rank) => `
-            <div class="final-score-item">
-                <span>${rank + 1}. ${this._players[i].name}</span>
-                <span>${scores[i]} points</span>
-            </div>
-        `).join('');
+        if (isStandard2P) {
+            // Aggregate scores for 2P Standard (P0+P2 and P1+P3)
+            const playerScores = [0, 0];
+            const playerNames = [];
+
+            // Get original names from config
+            for (let i = 0; i < 2; i++) {
+                playerNames[i] = this._config.players?.[i]?.name || `Joueur ${i + 1}`;
+            }
+
+            // Sum scores based on controlledBy property
+            this._players.forEach((p, i) => {
+                const controllerId = p.controlledBy;
+                if (controllerId !== undefined) {
+                    playerScores[controllerId] += scores[i];
+                }
+            });
+
+            const rankings = [0, 1].sort((a, b) => playerScores[b] - playerScores[a]);
+
+            scoresDiv.innerHTML = rankings.map((i, rank) => `
+                <div class="final-score-item player-std-${i}">
+                    <span>${rank + 1}. ${playerNames[i]}</span>
+                    <span>${playerScores[i]} points</span>
+                </div>
+            `).join('');
+        } else {
+        // Normal mode rankings
+            const rankings = [...scores.keys()].sort((a, b) => scores[b] - scores[a]);
+
+            scoresDiv.innerHTML = rankings.map((i, rank) => `
+                <div class="final-score-item player-${this._players[i].id}">
+                    <span>${rank + 1}. ${this._players[i].name}</span>
+                    <span>${scores[i]} points</span>
+                </div>
+            `).join('');
+        }
 
         modal.classList.remove('hidden');
     }
