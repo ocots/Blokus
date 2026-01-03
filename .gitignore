@@ -199,3 +199,6 @@ tmp/
 training_queue.json
 *.bak
 *.tmp
+
+#
+.DS_Store
