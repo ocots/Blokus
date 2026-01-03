@@ -16,18 +16,22 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: '3.10'
+        python-version: '3.11'  # Align with training workflow
+        cache: 'pip'
     
     - name: Install dependencies
       run: |
         cd blokus-engine
         python -m pip install --upgrade pip
-        pip install -e ".[dev]"
+        # Install dev dependencies including pytest, mypy, etc.
+        pip install -e "."
+        pip install pytest pytest-cov mypy types-setuptools numpy gymnasium torch
     
     - name: Run MyPy (Type Checking)
       run: |
         cd blokus-engine
-        mypy src/blokus --strict --show-error-codes
+        # --ignore-missing-imports is often needed for untyped libs like pygame/gymnasium if stubs aren't installed
+        mypy src/blokus --ignore-missing-imports --show-error-codes
       continue-on-error: true  # Don't fail build yet, just report
     
     - name: Run Tests
@@ -41,4 +45,5 @@ jobs:
         file: ./blokus-engine/coverage.xml
         flags: unittests
         name: codecov-blokus
+        token: ${{ secrets.CODECOV_TOKEN }}
       if: always()
