@@ -1,0 +1,11 @@
+{
+  "queue": [
+    {
+      "experiment_name": "quick_ci_test",
+      "board_size": 14,
+      "episodes": 10,
+      "eval_frequency": 5,
+      "resume": false
+    }
+  ]
+}

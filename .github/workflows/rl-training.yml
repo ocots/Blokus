@@ -248,5 +248,5 @@ jobs:
           gh pr create \
             --title "🧠 Model Trained: ${{ needs.setup.outputs.experiment_name }}" \
             --body "Trained on ${{ needs.setup.outputs.episodes }} episodes. Best win rate: ${{ needs.train.outputs.best_win_rate }}" \
-            --base main \
+            --base 1-training \
             --head "${{ steps.commit.outputs.branch_name }}"
