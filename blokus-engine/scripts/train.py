@@ -229,12 +229,21 @@ def train(
             # Progress output
             if (episode + 1) % log_freq == 0:
                 elapsed = time.time() - start_time
-                eps_per_sec = (episode - start_episode + 1) / (elapsed + 1e-6)
+                count = episode - start_episode + 1
+                if elapsed > 0:
+                    speed = count / elapsed
+                    if speed < 1.0:
+                        speed_str = f"{1/speed:.2f} s/ep"
+                    else:
+                        speed_str = f"{speed:.2f} ep/s"
+                else:
+                    speed_str = "Inf ep/s"
+                    
                 print(f"Episode {episode + 1}/{config.total_episodes} | "
                       f"Win Rate (100): {np.mean(recent_wins):.1%} | "
                       f"Loss: {ep_stats['loss']:.4f} | "
                       f"Eps: {ep_stats['epsilon']:.3f} | "
-                      f"Speed: {eps_per_sec:.1f} ep/s")
+                      f"Speed: {speed_str}")
             
             # Evaluation
             if (episode + 1) % config.eval_frequency == 0:
