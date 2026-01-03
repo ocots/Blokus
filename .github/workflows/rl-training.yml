@@ -191,7 +191,17 @@ jobs:
           fi
           echo "success=true" >> $GITHUB_OUTPUT
 
-      - name: 📦 Upload training artifacts
+      - name: � Generate training plot
+        if: steps.train.outputs.success == 'true'
+        working-directory: blokus-engine
+        run: |
+          METRICS_FILE="models/experiments/$EXP_NAME/metrics.csv"
+          PLOT_FILE="models/experiments/$EXP_NAME/training_plot.png"
+          if [ -f "$METRICS_FILE" ]; then
+             python scripts/plot_metrics.py "$METRICS_FILE" "$PLOT_FILE"
+          fi
+
+      - name: �📦 Upload training artifacts
         if: steps.train.outputs.success == 'true'
         uses: actions/upload-artifact@v4
         with:
