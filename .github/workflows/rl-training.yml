@@ -191,6 +191,7 @@ jobs:
             --board-size "${{ needs.setup.outputs.board_size }}" \
             --episodes "${{ needs.setup.outputs.episodes }}" \
             --eval-freq "${{ needs.setup.outputs.eval_frequency }}" \
+            --eval-games 10 \
             --log-freq 1 \
             --no-video
           
