@@ -175,7 +175,7 @@ jobs:
             MODE_FLAG="--resume $EXP_NAME"
           fi
           
-          python scripts/train.py \
+          python -u scripts/train.py \
             $MODE_FLAG \
             --name "$EXP_NAME" \
             --board-size "${{ needs.setup.outputs.board_size }}" \
