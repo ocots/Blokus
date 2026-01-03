@@ -1,3 +1,13 @@
 {
-  "queue": []
+  "queue": [
+    {
+      "experiment_name": "duo_v1_run1",
+      "board_size": 14,
+      "episodes": 10000,
+      "eval_frequency": 500,
+      "eval_games": 20,
+      "log_frequency": 100,
+      "resume": false
+    }
+  ]
 }
