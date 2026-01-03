@@ -1073,3 +1073,133 @@ body {
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
 }
+/* =============================================================================
+   ENDGAME MODAL & REPLAY
+   ============================================================================= */
+
+.endgame-modal-content {
+    max-width: 850px !important;
+    width: 95vw !important;
+}
+
+.endgame-layout {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 1.5rem;
+    margin-top: 1rem;
+    text-align: left;
+    align-items: flex-start;
+}
+
+.endgame-sidebar {
+    flex: 0 0 280px;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.endgame-main {
+    flex: 1;
+    background: var(--bg-primary);
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.5);
+}
+
+.replay-viewer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.25rem;
+}
+
+#replay-board {
+    background: var(--board-bg);
+    border-radius: 8px;
+    box-shadow: var(--shadow-lg);
+    max-width: 100%;
+}
+
+.replay-interface {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.replay-status {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    padding: 0 0.5rem;
+    border-bottom: 1px solid var(--bg-tertiary);
+    padding-bottom: 0.5rem;
+}
+
+.replay-controls {
+    display: flex;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.replay-btn {
+    background: var(--bg-tertiary);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    color: white;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1.1rem;
+    transition: all var(--transition-fast);
+}
+
+.replay-btn:hover:not(:disabled) {
+    background: var(--accent);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.replay-btn:active:not(:disabled) {
+    transform: translateY(0);
+}
+
+.replay-btn:disabled {
+    opacity: 0.2;
+    cursor: not-allowed;
+}
+
+.replay-settings {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+
+.speed-select {
+    width: auto !important;
+    padding: 0.35rem 0.5rem !important;
+    font-size: 0.85rem !important;
+}
+
+@media (max-width: 850px) {
+    .endgame-layout {
+        flex-direction: column;
+    }
+
+    .endgame-sidebar {
+        flex: none;
+        width: 100%;
+    }
+
+    .endgame-modal-content {
+        padding: 1.5rem;
+    }
+}

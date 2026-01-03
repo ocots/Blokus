@@ -193,13 +193,49 @@
 
         <!-- Game over modal -->
         <div id="game-over-modal" class="modal hidden">
-            <div class="modal-content">
+            <div class="modal-content endgame-modal-content">
                 <h2>🏆 Partie terminée !</h2>
-                <div id="final-scores" class="final-scores"></div>
-                <div class="modal-buttons">
-                    <button id="btn-new-game" class="btn-primary">Nouvelle partie</button>
-                    <button id="btn-return-menu" class="btn-secondary">Retour au menu</button>
-                    </div>
+                <div class="endgame-layout">
+                    <!-- Left column: Scores & Main Actions -->
+                    <div class="endgame-sidebar">
+                        <div id="final-scores" class="final-scores"></div>
+                        <div class="modal-buttons">
+                            <button id="btn-new-game" class="btn-primary">Nouvelle partie</button>
+                            <button id="btn-return-menu" class="btn-secondary">Menu</button>
+                            </div>
+                            </div>
+                            
+                            <!-- Right column: Board & Replay -->
+                            <div class="endgame-main">
+                                <div class="replay-viewer">
+                                    <canvas id="replay-board" width="400" height="400"></canvas>
+                            
+                                    <div class="replay-interface">
+                                        <div class="replay-status">
+                                            <span id="replay-move-info">Fin de partie</span>
+                                            <span id="replay-move-counter">Coup 0 / 0</span>
+                                        </div>
+                            
+                                        <div class="replay-controls">
+                                            <button id="btn-replay-start" class="replay-btn" title="Début">⏮️</button>
+                                            <button id="btn-replay-prev" class="replay-btn" title="Précédent">◀️</button>
+                                            <button id="btn-replay-play" class="replay-btn" title="Lecture/Pause">▶️</button>
+                                            <button id="btn-replay-next" class="replay-btn" title="Suivant">▶️</button>
+                                            <button id="btn-replay-end" class="replay-btn" title="Fin">⏭️</button>
+                                        </div>
+                            
+                                        <div class="replay-settings">
+                                            <label for="replay-speed">Vitesse :</label>
+                                            <select id="replay-speed" class="setup-input speed-select">
+                                                <option value="0.5">x0.5</option>
+                                                <option value="1" selected>x1</option>
+                                                <option value="2">x2</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            </div>
             </div>
         </div>
     </div>

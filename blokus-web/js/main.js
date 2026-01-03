@@ -11,12 +11,15 @@ import { SetupManager } from './setup.js';
 import { AppStateManager, APP_STATE } from './state.js';
 import { logger } from './logger.js';
 import * as api from './api.js';
+import { ReplayManager } from './replay.js';
 import { VERSION, logVersion } from './version.js';
 
 /** @type {Game|null} */
 let game = null;
 /** @type {AppStateManager} */
 let stateManager = null;
+/** @type {ReplayManager|null} */
+let replayManager = null;
 
 /**
  * Get the game instance (for testing/debugging)
@@ -158,6 +161,13 @@ async function resumeGame(json) {
 
     if (success) {
         console.log(`${VERSION.getLogPrefix()} ✅ Game successfully resumed`);
+
+        // Initialize replay (cleanup old one)
+        if (replayManager) replayManager.destroy();
+        replayManager = new ReplayManager('replay-board', game);
+        game.onGameOver((history) => {
+            replayManager.init(history);
+        });
     } else {
         console.error(`${VERSION.getLogPrefix()} ❌ Failed to resume game`);
         alert('Erreur lors du chargement de la sauvegarde.');
@@ -231,6 +241,13 @@ async function launchGame(config, isApiAvailable) {
 
     // Initial render
     board.render();
+
+    // Initialize replay (cleanup old one)
+    if (replayManager) replayManager.destroy();
+    replayManager = new ReplayManager('replay-board', game);
+    game.onGameOver((history) => {
+        replayManager.init(history);
+    });
 
     // Auto-save immediately to enable reload-resume
     game.save();
