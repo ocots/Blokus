@@ -3,8 +3,16 @@ set -e  # Exit on error
 
 # Configuration
 VENV_DIR="/projects/ctb/blokus-runner/blokus-venv"
-PROJECT_ROOT="$(pwd)/blokus-engine" # Assuming script is run from repo root
-EXPERIMENT_PATH="/projects/ctb/blokus-runner/_work/Blokus/Blokus/blokus-engine/models/experiments/duo_gpu_2h_run_v1_20260104_211851"
+PROJECT_ROOT="$(pwd)/blokus-engine"
+EXPERIMENTS_DIR="$PROJECT_ROOT/models/experiments"
+
+# Default target (can be overridden by argument)
+TARGET_EXP="duo_gpu_2h_run_v1_20260104_211851"
+if [ "$1" ]; then
+    TARGET_EXP="$1"
+fi
+
+EXPERIMENT_PATH="$EXPERIMENTS_DIR/$TARGET_EXP"
 METRICS_FILE="$EXPERIMENT_PATH/metrics.csv"
 PLOT_OUTPUT="$EXPERIMENT_PATH/training_plot.png"
 
@@ -21,8 +29,6 @@ if [ -d "$VENV_DIR" ]; then
     echo "✅ Persistent venv found at $VENV_DIR"
     source "$VENV_DIR/bin/activate"
     echo "   Activated venv."
-    echo "   Python: $(which python)"
-    echo "   Version: $(python --version)"
 else
     echo "❌ Venv NOT found at $VENV_DIR"
     exit 1
@@ -31,65 +37,57 @@ fi
 echo "--------------------------------------------------------"
 echo "📦 Checking Dependencies..."
 
-# Check if matplotlib is installed
 if python -c "import matplotlib" 2>/dev/null; then
     echo "✅ Matplotlib is already installed."
 else
     echo "⚠️  Matplotlib not found. Installing dependencies..."
-    
-    # Navigate to engine to install deps
     if [ -d "blokus-engine" ]; then
         cd blokus-engine
-        echo "   Changed directory to blokus-engine"
-    elif [ -f "pyproject.toml" ]; then
-        echo "   Already in what looks like the engine/project root"
+        pip install -e ".[dev]"
+        cd ..
+        echo "✅ Dependencies updated."
     else
-        echo "❌ Could not find blokus-engine directory or pyproject.toml"
+        echo "❌ Could not find blokus-engine directory"
         exit 1
     fi
-
-    echo "   Running pip install -e '.[dev]'..."
-    pip install -e ".[dev]"
-    echo "✅ Dependencies updated."
-    
-    # Return to original dir if needed, but we probably just want to run the script now
-    cd ..
 fi
 
 echo "--------------------------------------------------------"
 echo "📈 Generating Plot..."
-echo "Target: $METRICS_FILE"
+echo "Target Experiment: $TARGET_EXP"
+echo "Metrics File: $METRICS_FILE"
 
-if [ -f "$METRICS_FILE" ]; then
-    echo "   Metrics file exists."
-    
-    # Determine path to plot_metrics.py
-    SCRIPT_PATH="blokus-engine/scripts/plot_metrics.py"
-    if [ ! -f "$SCRIPT_PATH" ]; then
-        SCRIPT_PATH="scripts/plot_metrics.py" # try relative if inside engine
-    fi
-    
-    if [ ! -f "$SCRIPT_PATH" ]; then
-         echo "❌ Could not find plot_metrics.py at $SCRIPT_PATH"
-         find . -name "plot_metrics.py"
-         exit 1
-    fi
-
-    echo "   Running: python $SCRIPT_PATH \"$METRICS_FILE\" \"$PLOT_OUTPUT\""
-    python "$SCRIPT_PATH" "$METRICS_FILE" "$PLOT_OUTPUT"
-    
-    if [ -f "$PLOT_OUTPUT" ]; then
-        echo "✅ Plot generated successfully at: $PLOT_OUTPUT"
+if [ ! -f "$METRICS_FILE" ]; then
+    echo "❌ Metrics file not found at expected path."
+    echo ""
+    echo "Available experiments in $EXPERIMENTS_DIR:"
+    if [ -d "$EXPERIMENTS_DIR" ]; then
+        ls -1 "$EXPERIMENTS_DIR"
     else
-        echo "❌ Script ran but output file not found."
-        exit 1
+        echo "❌ Experiments directory not found at $EXPERIMENTS_DIR"
     fi
+    echo ""
+    echo "Usage: bash scripts/recover_plots_manual.sh [EXPERIMENT_NAME]"
+    exit 1
+fi
+
+# Locate script
+SCRIPT_PATH="blokus-engine/scripts/plot_metrics.py"
+if [ ! -f "$SCRIPT_PATH" ]; then
+    echo "❌ Could not find plot_metrics.py at $SCRIPT_PATH"
+    exit 1
+fi
+
+echo "   Running plotting script..."
+python "$SCRIPT_PATH" "$METRICS_FILE" "$PLOT_OUTPUT"
+
+if [ -f "$PLOT_OUTPUT" ]; then
+    echo "✅ Plot generated successfully at: $PLOT_OUTPUT"
 else
-    echo "❌ Metrics file not found!"
-    ls -l "$EXPERIMENT_PATH"
+    echo "❌ Script ran but output file not found."
     exit 1
 fi
 
 echo "========================================================"
-echo "🎉 Done! You can now commit the result if you are in the git repo."
+echo "🎉 Done!"
 echo "========================================================"
