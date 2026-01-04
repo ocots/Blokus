@@ -160,26 +160,26 @@ jobs:
           #SBATCH --error=$WORKDIR/slurm-%j.err
           
           
-          set -euxo pipefail  # Added -x for command tracing
+          set -exo pipefail  # Removed -u to avoid unbound variable errors in /etc/profile
           
           echo "=========================================="
-          echo "🚀 SLURM Job Starting"
+          echo "SLURM Job Starting"
           echo "=========================================="
           echo "Job ID: \$SLURM_JOB_ID"
           echo "Node: \$SLURM_NODELIST"
           echo "Working directory should be: $WORKDIR"
           echo ""
           
-          echo "📦 Step 0: Sourcing profile for module command..."
-          source /etc/profile || true
-          if [ -f /etc/profile.d/modules.sh ]; then source /etc/profile.d/modules.sh; fi
-          if [ -f /etc/profile.d/lmod.sh ]; then source /etc/profile.d/lmod.sh; fi
-          echo "✅ Profile sourced"
+          echo "Step 0: Sourcing profile for module command..."
+          source /etc/profile 2>/dev/null || true
+          [ -f /etc/profile.d/modules.sh ] && source /etc/profile.d/modules.sh 2>/dev/null || true
+          [ -f /etc/profile.d/lmod.sh ] && source /etc/profile.d/lmod.sh 2>/dev/null || true
+          echo "Profile sourced"
           echo ""
           
-          echo "📦 Step 1: Loading CUDA module..."
+          echo "Step 1: Loading CUDA module..."
           module load cuda/12.2
-          echo "✅ CUDA module loaded"
+          echo "CUDA module loaded"
           echo ""
           
           echo "📂 Step 2: Changing to working directory..."
