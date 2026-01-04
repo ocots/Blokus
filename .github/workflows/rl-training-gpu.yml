@@ -351,13 +351,52 @@ jobs:
             ${{ steps.collect.outputs.experiment_dir }}/training_plot.png
           retention-days: 30
 
+      - name: 🚀 Deploy model to registry
+        id: deploy
+        if: steps.collect.outputs.success == 'true'
+        run: |
+          cd blokus-engine
+          source job_results.txt
+          
+          # Quality gate: only deploy if win_rate >= 0.5
+          WIN_RATE_THRESHOLD=0.5
+          if (( $(echo "$BEST_WIN_RATE >= $WIN_RATE_THRESHOLD" | bc -l) )); then
+            echo "✅ Model meets quality threshold (win_rate: $BEST_WIN_RATE >= $WIN_RATE_THRESHOLD)"
+            
+            # Create deployed directory if it doesn't exist
+            mkdir -p models/deployed
+            
+            # Copy model to deployed directory
+            EXP_NAME="${{ needs.setup.outputs.experiment_name }}"
+            DEPLOYED_PATH="models/deployed/${EXP_NAME}.pt"
+            cp "$EXPERIMENT_DIR/model.pt" "$DEPLOYED_PATH"
+            echo "📦 Copied model to $DEPLOYED_PATH"
+            
+            # Update registry
+            python ../scripts/update_registry.py \
+              --id "$EXP_NAME" \
+              --name "Expert Duo ($EXP_NAME)" \
+              --description "IA entraînée sur GPU (Occidata). Win rate: ${BEST_WIN_RATE}. Niveau expert." \
+              --model-path "deployed/${EXP_NAME}.pt" \
+              --board-size ${{ needs.setup.outputs.board_size }} \
+              --enabled
+            
+            echo "deployed=true" >> "$GITHUB_OUTPUT"
+            echo "deployed_path=$DEPLOYED_PATH" >> "$GITHUB_OUTPUT"
+          else
+            echo "⚠️  Model does not meet quality threshold (win_rate: $BEST_WIN_RATE < $WIN_RATE_THRESHOLD)"
+            echo "Model will not be deployed to registry"
+            echo "deployed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+
   # ─────────────────────────────────────────────────────────────
   # Commit results
   # ─────────────────────────────────────────────────────────────
   commit-results:
     name: 💾 Commit training results
     runs-on: ubuntu-latest
-    needs: [train]
+    needs: [setup, train]
     if: needs.train.outputs.success == 'true'
     steps:
       - name: Checkout repository
@@ -376,10 +415,28 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           
+          # Add experiment results
           git add ${{ needs.train.outputs.experiment_dir }}
-          git commit -m "🤖 GPU Training results: ${{ needs.train.outputs.experiment_dir }}
+          
+          # Add deployed model and registry if deployment happened
+          if [ -f "blokus-engine/models/deployed/${{ needs.setup.outputs.experiment_name }}.pt" ]; then
+            git add blokus-engine/models/deployed/${{ needs.setup.outputs.experiment_name }}.pt
+            git add blokus-engine/models/registry.json
+            
+            git commit -m "🚀 Deploy model: ${{ needs.setup.outputs.experiment_name }}
+          
+          Win rate: ${{ needs.train.outputs.best_win_rate }}
+          Trained on: Occidata GPU (GTX 1080 Ti)
+          
+          Model deployed to registry and ready to play in browser!" || echo "No changes to commit"
+          else
+            git commit -m "🤖 GPU Training results: ${{ needs.train.outputs.experiment_dir }}
           
           Best win rate: ${{ needs.train.outputs.best_win_rate }}
-          Trained on: Occidata GPU (GTX 1080 Ti)" || echo "No changes to commit"
+          Trained on: Occidata GPU (GTX 1080 Ti)
+          
+          Model did not meet deployment threshold." || echo "No changes to commit"
+          fi
           
           git push || echo "Nothing to push"
+
