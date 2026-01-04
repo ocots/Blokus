@@ -1,0 +1,61 @@
+name: Recover Plots (Occidata)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  recover:
+    name: 📊 Recover Plots
+    runs-on: [self-hosted, blokus, occidata]
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Python environment and Install Deps
+        run: |
+          # Use persistent venv
+          VENV_DIR="/projects/ctb/blokus-runner/blokus-venv"
+          source "$VENV_DIR/bin/activate"
+          
+          # Install updated dependencies (matplotlib, pandas)
+          cd blokus-engine
+          pip install -e ".[dev]"
+          
+          echo "Dependencies installed."
+
+      - name: 📈 Generate Plots
+        run: |
+          VENV_DIR="/projects/ctb/blokus-runner/blokus-venv"
+          source "$VENV_DIR/bin/activate"
+          
+          # Target experiment from the user log
+          EXP_DIR="/projects/ctb/blokus-runner/_work/Blokus/Blokus/blokus-engine/models/experiments/duo_gpu_2h_run_v1_20260104_211851"
+          METRICS_FILE="$EXP_DIR/metrics.csv"
+          PLOT_OUTPUT="$EXP_DIR/training_plot.png"
+          
+          if [ -f "$METRICS_FILE" ]; then
+            echo "Generating plot for $METRICS_FILE..."
+            python blokus-engine/scripts/plot_metrics.py "$METRICS_FILE" "$PLOT_OUTPUT"
+            echo "Plot generated at $PLOT_OUTPUT"
+          else
+            echo "❌ Metrics file not found at $METRICS_FILE"
+            exit 1
+          fi
+
+      - name: 💾 Commit Plot
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          
+          EXP_DIR="/projects/ctb/blokus-runner/_work/Blokus/Blokus/blokus-engine/models/experiments/duo_gpu_2h_run_v1_20260104_211851"
+          PLOT_OUTPUT="$EXP_DIR/training_plot.png"
+          
+          if [ -f "$PLOT_OUTPUT" ]; then
+            git add "$PLOT_OUTPUT"
+            git commit -m "📊 Recovered training plot for duo_gpu_2h_run_v1" || echo "No changes to commit"
+            git push
+          else
+            echo "❌ Plot file not found, nothing to commit."
+            exit 1
+          fi
