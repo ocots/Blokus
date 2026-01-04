@@ -339,6 +339,17 @@ jobs:
             if [ -f "$METRICS_FILE" ]; then
               python scripts/plot_metrics.py "$METRICS_FILE" "$EXPERIMENT_DIR/training_plot.png"
             fi
+            
+            # Prepare model artifact
+            if [ -f "$EXPERIMENT_DIR/checkpoint_best.pt" ]; then
+              cp "$EXPERIMENT_DIR/checkpoint_best.pt" "$EXPERIMENT_DIR/model.pt"
+              echo "✅ Copied best checkpoint to model.pt"
+            elif [ -f "$EXPERIMENT_DIR/checkpoint_latest.pt" ]; then
+              cp "$EXPERIMENT_DIR/checkpoint_latest.pt" "$EXPERIMENT_DIR/model.pt"
+              echo "⚠️  Copied latest checkpoint to model.pt (best not found)"
+            else
+              echo "❌ No checkpoint found to copy!"
+            fi
           else
             echo "success=false" >> "$GITHUB_OUTPUT"
           fi
