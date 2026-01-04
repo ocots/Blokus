@@ -1,0 +1,32 @@
+{
+  "experiment_name": "test_artifact_fix_20260105_002555",
+  "created_at": "2026-01-05T00:26:00.433636",
+  "updated_at": "2026-01-05T00:27:42.309148",
+  "total_episodes": 29,
+  "total_steps": 97,
+  "current_epoch": 2,
+  "best_win_rate": 1.0,
+  "best_epoch": 1,
+  "current_epsilon": 0.050000000000000044,
+  "config": {
+    "experiment_name": "test_artifact_fix_20260105_002555",
+    "board_size": 14,
+    "num_players": 2,
+    "total_episodes": 29,
+    "learning_rate": 0.0001,
+    "batch_size": 64,
+    "gamma": 0.99,
+    "epsilon_start": 1.0,
+    "epsilon_end": 0.05,
+    "epsilon_decay_episodes": 20,
+    "replay_buffer_size": 100000,
+    "min_buffer_size": 10,
+    "eval_frequency": 10,
+    "eval_games": 2,
+    "checkpoint_frequency": 10,
+    "keep_periodic_checkpoints": true,
+    "use_tensorboard": true,
+    "record_video": false,
+    "max_video_frames": 100
+  }
+}
