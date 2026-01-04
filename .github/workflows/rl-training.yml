@@ -91,8 +91,8 @@ jobs:
             EVAL_GAMES=$(jq -r '.queue[0].eval_games // 100' $JSON_FILE)
             LOG_FREQ=$(jq -r '.queue[0].log_frequency // 100' $JSON_FILE)
             MIN_BUFFER=$(jq -r '.queue[0].min_buffer_size // 10000' $JSON_FILE)
-            RESUME=$(jq -r '.queue[0].resume // "false"' "$QUEUE_FILE")
-            DEVICE=$(jq -r '.queue[0].device // "cpu"' "$QUEUE_FILE")
+            RESUME=$(jq -r '.queue[0].resume // "false"' "$JSON_FILE")
+            DEVICE=$(jq -r '.queue[0].device // "cpu"' "$JSON_FILE")
             
             echo "experiment_name=$EXP_NAME" >> "$GITHUB_OUTPUT"
             echo "board_size=$BOARD_SIZE" >> "$GITHUB_OUTPUT"
