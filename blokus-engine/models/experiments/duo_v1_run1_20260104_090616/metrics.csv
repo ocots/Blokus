@@ -1,0 +1,3 @@
+step,episode,timestamp,env/episode_length,env/episode_reward,env/score_diff,env/win_rate_100,train/epsilon,train/loss
+0,0,2026-01-04T09:06:38.238161,27,0.48982202247191015,-6,0.0,0.999981,0.0
+0,1,2026-01-04T09:07:00.853705,24,0.43316569288389517,-3,0.0,0.999962,0.0
