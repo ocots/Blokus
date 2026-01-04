@@ -68,7 +68,7 @@ echo "   ✅ Dependencies installed"
 echo ""
 echo "📌 Step 7: Installing blokus package..."
 if [ -d "$REPO_DIR" ]; then
-    pip install -e "$REPO_DIR[dev]"
+    pip install -e "$REPO_DIR\[dev\]"
     echo "   ✅ blokus installed from $REPO_DIR"
 else
     echo "   ⚠️  Repo not found at $REPO_DIR"
