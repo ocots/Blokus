@@ -1,14 +1,14 @@
 {
   "queue": [
     {
-      "experiment_name": "verify_matplotlib_fix",
+      "experiment_name": "duo_10h_run_v1",
       "board_size": 14,
-      "episodes": 20,
-      "eval_frequency": 5,
-      "eval_games": 2,
-      "log_frequency": 5,
-      "min_buffer_size": 10,
-      "epsilon_decay": 10,
+      "episodes": 10000,
+      "eval_frequency": 500,
+      "eval_games": 50,
+      "log_frequency": 100,
+      "min_buffer_size": 1000,
+      "epsilon_decay": 8000,
       "learning_rate": 0.0001,
       "batch_size": 64,
       "resume": false,
