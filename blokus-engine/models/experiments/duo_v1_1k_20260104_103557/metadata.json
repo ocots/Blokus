@@ -1,0 +1,32 @@
+{
+  "experiment_name": "duo_v1_1k_20260104_103557",
+  "created_at": "2026-01-04T10:35:58.368944",
+  "updated_at": "2026-01-04T12:01:08.723265",
+  "total_episodes": 1000,
+  "total_steps": 3822,
+  "current_epoch": 10,
+  "best_win_rate": 1.0,
+  "best_epoch": 1,
+  "current_epsilon": 0.981,
+  "config": {
+    "experiment_name": "duo_v1_1k_20260104_103557",
+    "board_size": 14,
+    "num_players": 2,
+    "total_episodes": 1000,
+    "learning_rate": 0.0001,
+    "batch_size": 64,
+    "gamma": 0.99,
+    "epsilon_start": 1.0,
+    "epsilon_end": 0.05,
+    "epsilon_decay_episodes": 50000,
+    "replay_buffer_size": 100000,
+    "min_buffer_size": 1000,
+    "eval_frequency": 100,
+    "eval_games": 50,
+    "checkpoint_frequency": 10,
+    "keep_periodic_checkpoints": true,
+    "use_tensorboard": true,
+    "record_video": false,
+    "max_video_frames": 100
+  }
+}
