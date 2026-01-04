@@ -3,7 +3,7 @@ set -e  # Exit on error
 
 # Configuration
 VENV_DIR="/projects/ctb/blokus-runner/blokus-venv"
-PROJECT_ROOT="$(pwd)/blokus-engine" # Assuming script is run from repo root or adapted
+PROJECT_ROOT="$(pwd)/blokus-engine" # Assuming script is run from repo root
 EXPERIMENT_PATH="/projects/ctb/blokus-runner/_work/Blokus/Blokus/blokus-engine/models/experiments/duo_gpu_2h_run_v1_20260104_211851"
 METRICS_FILE="$EXPERIMENT_PATH/metrics.csv"
 PLOT_OUTPUT="$EXPERIMENT_PATH/training_plot.png"
