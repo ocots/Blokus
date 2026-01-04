@@ -153,70 +153,62 @@ jobs:
           #SBATCH --job-name=blokus-rl
           #SBATCH --partition=GPUNodes
           #SBATCH --gres=gpu:1080ti:1
+          #SBATCH --gres-flags=enforce-binding
           #SBATCH --cpus-per-task=4
           #SBATCH --mem=32G
           #SBATCH --time=06:00:00
           #SBATCH --output=$WORKDIR/slurm-%j.out
           #SBATCH --error=$WORKDIR/slurm-%j.err
           
-          
-          set -exo pipefail  # Removed -u to avoid unbound variable errors in /etc/profile
+          set -exo pipefail
           
           echo "=========================================="
-          echo "SLURM Job Starting"
+          echo "Blokus RL Training on GPU"
           echo "=========================================="
           echo "Job ID: \$SLURM_JOB_ID"
           echo "Node: \$SLURM_NODELIST"
-          echo "Working directory should be: $WORKDIR"
+          echo "Working directory: $WORKDIR"
           echo ""
           
-          echo "Step 0: Sourcing profile for module command..."
-          source /etc/profile 2>/dev/null || true
-          [ -f /etc/profile.d/modules.sh ] && source /etc/profile.d/modules.sh 2>/dev/null || true
-          [ -f /etc/profile.d/lmod.sh ] && source /etc/profile.d/lmod.sh 2>/dev/null || true
-          echo "Profile sourced"
-          echo ""
+          # Singularity container path
+          CONTAINER="/apps/containerCollections/CUDA12/pytorch2-NGC-24-02.sif"
+          VENV_DIR="/projects/ctb/blokus-runner/blokus-venv"
           
-          echo "Step 1: Loading CUDA module..."
-          module load cuda/12.2
-          echo "CUDA module loaded"
-          echo ""
-          
-          echo "📂 Step 2: Changing to working directory..."
-          echo "Before cd: \$(pwd)"
+          echo "Step 1: Changing to working directory..."
           cd $WORKDIR
-          echo "After cd: \$(pwd)"
-          echo "✅ Changed to working directory"
+          echo "Current directory: \$(pwd)"
           echo ""
           
-          echo "🐍 Step 3: Activating Python venv..."
-          source /projects/ctb/blokus-runner/blokus-venv/bin/activate
-          echo "Python: \$(which python)"
-          echo "Python version: \$(python --version)"
-          echo "✅ Venv activated"
+          echo "Step 2: GPU Information (via Singularity)..."
+          singularity exec \$CONTAINER nvidia-smi
           echo ""
           
-          echo "🔍 Step 4: GPU Information:"
-          nvidia-smi
-          echo ""
-          
-          echo "📋 Step 5: Listing files in working directory..."
+          echo "Step 3: Listing files..."
           ls -la
           echo ""
           
-          echo "🎯 Step 6: Starting training..."
-          echo "Script path: $SCRIPT_PATH"
+          echo "Step 4: Starting training in Singularity container..."
+          echo "Container: \$CONTAINER"
+          echo "Venv: \$VENV_DIR"
+          echo "Script: $SCRIPT_PATH"
           echo "Experiment: $EXP_NAME"
-          echo "Command: python -u $SCRIPT_PATH --new --name $EXP_NAME --board-size $BOARD_SIZE --episodes $EPISODES --eval-freq $EVAL_FREQ --eval-games $EVAL_GAMES --log-freq $LOG_FREQ --min-buffer $MIN_BUFFER --no-video"
           echo ""
           
-          python -u "$SCRIPT_PATH" --new --name "$EXP_NAME" --board-size "$BOARD_SIZE" --episodes "$EPISODES" --eval-freq "$EVAL_FREQ" --eval-games "$EVAL_GAMES" --log-freq "$LOG_FREQ" --min-buffer "$MIN_BUFFER" --no-video | tee training_output.txt
+          # Run training inside Singularity container with venv activated
+          singularity exec \$CONTAINER bash -c "
+            set -exo pipefail
+            source \$VENV_DIR/bin/activate
+            echo 'Python: '\$(which python)
+            echo 'Python version: '\$(python --version)
+            echo 'PyTorch version: '\$(python -c 'import torch; print(torch.__version__)')
+            echo 'CUDA available: '\$(python -c 'import torch; print(torch.cuda.is_available())')
+            echo ''
+            echo 'Starting training...'
+            python -u $SCRIPT_PATH --new --name $EXP_NAME --board-size $BOARD_SIZE --episodes $EPISODES --eval-freq $EVAL_FREQ --eval-games $EVAL_GAMES --log-freq $LOG_FREQ --min-buffer $MIN_BUFFER --no-video | tee training_output.txt
+          "
           
           echo ""
-          echo "✅ Training completed"
-          echo ""
-          
-          echo "📊 Step 7: Processing results..."
+          echo "Step 5: Processing results..."
           ACTUAL_EXP_DIR=\$(grep "EXPERIMENT_DIR=" training_output.txt | cut -d'=' -f2)
           echo "Experiment directory: \$ACTUAL_EXP_DIR"
           echo "EXPERIMENT_DIR=\$ACTUAL_EXP_DIR" > job_results.txt
