@@ -36,6 +36,7 @@ jobs:
       epsilon_decay: ${{ steps.parse.outputs.epsilon_decay }}
       learning_rate: ${{ steps.parse.outputs.learning_rate }}
       batch_size: ${{ steps.parse.outputs.batch_size }}
+      upload_model: ${{ steps.parse.outputs.upload_model }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -71,6 +72,7 @@ jobs:
           EPSILON_DECAY=$(jq -r '.queue[0].epsilon_decay // "50000"' "$QUEUE_FILE")
           LEARNING_RATE=$(jq -r '.queue[0].learning_rate // "0.0001"' "$QUEUE_FILE")
           BATCH_SIZE=$(jq -r '.queue[0].batch_size // "64"' "$QUEUE_FILE")
+          UPLOAD_MODEL=$(jq -r '.queue[0].upload_model // "true"' "$QUEUE_FILE")
           
           echo "📋 Training Configuration:"
           echo "  Experiment: $EXP_NAME"
@@ -85,6 +87,7 @@ jobs:
           echo "  Epsilon Decay: $EPSILON_DECAY"
           echo "  Learning Rate: $LEARNING_RATE"
           echo "  Batch Size: $BATCH_SIZE"
+          echo "  Upload Model: $UPLOAD_MODEL"
           
           echo "experiment_name=$EXP_NAME" >> "$GITHUB_OUTPUT"
           echo "board_size=$BOARD_SIZE" >> "$GITHUB_OUTPUT"
@@ -98,6 +101,7 @@ jobs:
           echo "epsilon_decay=$EPSILON_DECAY" >> "$GITHUB_OUTPUT"
           echo "learning_rate=$LEARNING_RATE" >> "$GITHUB_OUTPUT"
           echo "batch_size=$BATCH_SIZE" >> "$GITHUB_OUTPUT"
+          echo "upload_model=$UPLOAD_MODEL" >> "$GITHUB_OUTPUT"
 
   # ─────────────────────────────────────────────────────────────
   # GPU Training on Occidata
@@ -378,7 +382,16 @@ jobs:
         run: |
           mkdir -p ./training-artifacts
           EXP_DIR="${{ steps.collect.outputs.experiment_dir }}"
-          cp "$EXP_DIR/model.pt" ./training-artifacts/ || echo "model.pt not found"
+          
+          # Conditionally upload model based on upload_model flag
+          if [ "${{ needs.setup.outputs.upload_model }}" = "true" ]; then
+            cp "$EXP_DIR/model.pt" ./training-artifacts/ || echo "model.pt not found"
+            echo "✅ Including model.pt in upload"
+          else
+            echo "SKIPPED" > ./training-artifacts/model.pt
+            echo "⚠️  Skipping model.pt upload (upload_model=false)"
+          fi
+          
           cp "$EXP_DIR/metadata.json" ./training-artifacts/
           cp "$EXP_DIR/metrics.csv" ./training-artifacts/
           cp "$EXP_DIR/training_plot.png" ./training-artifacts/ || echo "plot not found"

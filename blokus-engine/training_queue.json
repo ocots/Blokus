@@ -1,6 +1,21 @@
 {
   "queue": [
     {
+      "experiment_name": "test_artifact_fix",
+      "board_size": 14,
+      "episodes": 30,
+      "eval_frequency": 10,
+      "eval_games": 2,
+      "log_frequency": 10,
+      "min_buffer_size": 10,
+      "epsilon_decay": 20,
+      "learning_rate": 0.0001,
+      "batch_size": 64,
+      "resume": false,
+      "device": "gpu",
+      "upload_model": false
+    },
+    {
       "experiment_name": "duo_10h_run_v1",
       "board_size": 14,
       "episodes": 10000,
@@ -12,7 +27,8 @@
       "learning_rate": 0.0001,
       "batch_size": 64,
       "resume": false,
-      "device": "gpu"
+      "device": "gpu",
+      "upload_model": true
     }
   ]
 }
