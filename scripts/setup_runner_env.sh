@@ -64,18 +64,7 @@ echo "📌 Step 6: Installing additional dependencies..."
 pip install matplotlib pandas gymnasium tensorboard numpy
 echo "   ✅ Dependencies installed"
 
-# Step 7: Install blokus package
-echo ""
-echo "📌 Step 7: Installing blokus package..."
-if [ -d "$REPO_DIR" ]; then
-    pip install -e "$REPO_DIR\[dev\]"
-    echo "   ✅ blokus installed from $REPO_DIR"
-else
-    echo "   ⚠️  Repo not found at $REPO_DIR"
-    echo "   ℹ️  You can install it later with:"
-    echo "      source $VENV_DIR/bin/activate"
-    echo "      pip install -e /path/to/blokus-engine[dev]"
-fi
+
 
 # Step 8: Verify installation
 echo ""
