@@ -1,7 +1,7 @@
 {
   "queue": [
     {
-      "experiment_name": "duo_gpu_test_v5",
+      "experiment_name": "duo_gpu_test_v6",
       "board_size": 14,
       "episodes": 50,
       "eval_frequency": 10,

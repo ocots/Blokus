@@ -223,6 +223,14 @@ jobs:
           
           # Check status
           echo ""
+          
+          # Always show stderr for debugging
+          if [ -s "$WORKDIR/slurm-${JOB_ID}.err" ]; then
+            echo "⚠️  SLURM Job Errors/Warnings:"
+            cat "$WORKDIR/slurm-${JOB_ID}.err"
+            echo ""
+          fi
+          
           if sacct -j $JOB_ID --format=State --noheader | grep -q "COMPLETED"; then
             echo "✅ Job completed successfully"
             
@@ -230,6 +238,14 @@ jobs:
             echo ""
             echo "📁 Files in workspace:"
             ls -lh "$WORKDIR/" | grep -E "(slurm|job_results|training_output)" || echo "No relevant files found"
+            
+            # Check if output is actually empty
+            if [ ! -s "$WORKDIR/slurm-${JOB_ID}.out" ]; then
+              echo ""
+              echo "❌ WARNING: Output file is empty!"
+              echo "This usually means the SLURM job failed to execute properly."
+              exit 1
+            fi
             
             exit 0
           else
