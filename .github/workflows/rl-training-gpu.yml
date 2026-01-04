@@ -104,6 +104,14 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: 📦 Cache Python venv
+        uses: actions/cache@v4
+        with:
+          path: blokus-engine/.venv
+          key: venv-occidata-${{ hashFiles('blokus-engine/pyproject.toml') }}
+          restore-keys: |
+            venv-occidata-
+
       - name: 📦 Setup Python environment
         run: |
           # Source profile to ensure 'module' command is available
