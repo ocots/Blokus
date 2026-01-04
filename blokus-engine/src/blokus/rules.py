@@ -23,19 +23,23 @@ def get_placement_rejection_reason(
     Returns None if placement is valid.
     """
     # Get absolute positions
+    # positions = piece.translate(row, col) # Avoid list creation if possible
+    
+    # Combined Rule 1 & 2: Check bounds and vacancy in one pass
+    # Using piece.coords directly to avoid intermediate list from translate()
+    for r, c in piece.coords:
+        abs_r, abs_c = row + r, col + c
+        # Direct bounds check is faster than board.is_valid_position
+        if not (0 <= abs_r < board.size and 0 <= abs_c < board.size):
+            return f"Position ({abs_r}, {abs_c}) is out of bounds"
+        # Direct grid access is faster than board.is_empty
+        if board.grid[abs_r, abs_c] != 0: # 0 is BoardCell.EMPTY
+            return f"Position ({abs_r}, {abs_c}) is already occupied"
+    
+    # We need the set for set operations below
     positions = piece.translate(row, col)
     
-    # Rule 1: Check all positions are within bounds
-    for r, c in positions:
-        if not board.is_valid_position(r, c):
-            return f"Position ({r}, {c}) is out of bounds"
-    
-    # Rule 2: Check all positions are empty
-    for r, c in positions:
-        if not board.is_empty(r, c):
-            return f"Position ({r}, {c}) is already occupied"
-    
-    # Get player's current pieces
+    # Get player's current pieces (Cached in Board)
     player_cells = board.get_player_cells(player_id)
     
     if is_first_move or not player_cells:
@@ -44,20 +48,18 @@ def get_placement_rejection_reason(
         if starting_corner is None:
             return f"No starting corner defined for player {player_id}"
         if starting_corner not in positions:
-            return f"First move must cover starting corner {starting_corner}, but piece covers {sorted(positions)}"
+            return f"First move must cover starting corner {starting_corner}"
         return None
     
-    # Rule 3: Must not touch own pieces by edge
+    # Rule 3: Must not touch own pieces by edge (Cached in Board)
     player_edges = board.get_player_edges(player_id)
-    edge_overlap = positions & player_edges
-    if edge_overlap:
-        return f"Piece touches own pieces by edge at {sorted(edge_overlap)}"
+    if not positions.isdisjoint(player_edges):
+        return "Piece touches own pieces by edge"
     
-    # Rule 4: Must touch own pieces by at least one corner
+    # Rule 4: Must touch own pieces by at least one corner (Cached in Board)
     player_corners = board.get_player_corners(player_id)
-    corner_overlap = positions & player_corners
-    if not corner_overlap:
-        return f"Piece doesn't touch any diagonal corner. Available corners: {sorted(player_corners)}, piece positions: {sorted(positions)}"
+    if positions.isdisjoint(player_corners):
+        return "Piece doesn't touch any diagonal corner"
     
     return None
 

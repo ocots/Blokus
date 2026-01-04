@@ -69,16 +69,29 @@ class Board:
     grid: np.ndarray = field(default=None)
     starting_corners: dict = field(default=None)
     
+    # Cache for player metadata
+    _cells_cache: dict[int, Set[Tuple[int, int]]] = field(default_factory=dict, init=False, repr=False)
+    _corners_cache: dict[int, Set[Tuple[int, int]]] = field(default_factory=dict, init=False, repr=False)
+    _edges_cache: dict[int, Set[Tuple[int, int]]] = field(default_factory=dict, init=False, repr=False)
+    
     def __post_init__(self):
         if self.grid is None:
             self.grid = np.zeros((self.size, self.size), dtype=np.int8)
         if self.starting_corners is None:
             self.starting_corners = get_starting_corners_for_size(self.size)
+        self.clear_cache()
     
+    def clear_cache(self):
+        """Clear the metadata cache."""
+        self._cells_cache = {}
+        self._corners_cache = {}
+        self._edges_cache = {}
+        
     def copy(self) -> "Board":
         """Create a deep copy of the board."""
         new_board = Board(size=self.size, starting_corners=self.starting_corners.copy())
         new_board.grid = self.grid.copy()
+        # No need to copy cache, it will rebuild on demand
         return new_board
     
     def get_starting_corners(self, player_id: int) -> Set[Tuple[int, int]]:
@@ -128,23 +141,36 @@ class Board:
             # Convert 0-indexed player_id to 1-indexed BoardCell
             self.grid[r, c] = BoardCell(player_id + 1)
         
+        # Invalidate cache
+        self.clear_cache()
+        
         return True
     
     def get_player_cells(self, player_id: int) -> Set[Tuple[int, int]]:
         """Get all cells occupied by a player."""
+        if player_id in self._cells_cache:
+            return self._cells_cache[player_id]
+            
         positions = np.argwhere(self.grid == BoardCell(player_id + 1))
-        return {(int(r), int(c)) for r, c in positions}
+        cells = {(int(r), int(c)) for r, c in positions}
+        self._cells_cache[player_id] = cells
+        return cells
     
     def get_player_corners(self, player_id: int) -> Set[Tuple[int, int]]:
         """
         Get all valid corner positions where a player can connect.
         These are diagonal to existing pieces but not edge-adjacent.
         """
+        if player_id in self._corners_cache:
+            return self._corners_cache[player_id]
+            
         player_cells = self.get_player_cells(player_id)
         
         if not player_cells:
             # First move: must use starting corner
-            return self.get_starting_corners(player_id)
+            corners = self.get_starting_corners(player_id)
+            self._corners_cache[player_id] = corners
+            return corners
         
         corners: Set[Tuple[int, int]] = set()
         
@@ -168,10 +194,14 @@ class Board:
                 if not is_edge_adjacent:
                     corners.add((nr, nc))
         
+        self._corners_cache[player_id] = corners
         return corners
     
     def get_player_edges(self, player_id: int) -> Set[Tuple[int, int]]:
         """Get all positions that are edge-adjacent to player's pieces."""
+        if player_id in self._edges_cache:
+            return self._edges_cache[player_id]
+            
         player_cells = self.get_player_cells(player_id)
         edges: Set[Tuple[int, int]] = set()
         
@@ -181,6 +211,7 @@ class Board:
                 if self.is_valid_position(nr, nc) and (nr, nc) not in player_cells:
                     edges.add((nr, nc))
         
+        self._edges_cache[player_id] = edges
         return edges
     
     def count_occupied(self) -> int:

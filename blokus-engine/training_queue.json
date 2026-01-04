@@ -1,7 +1,7 @@
 {
   "queue": [
     {
-      "experiment_name": "duo_v1_run_2_episodes",
+      "experiment_name": "duo_v1_run_2_episodes_cache",
       "board_size": 14,
       "episodes": 2,
       "eval_frequency": 5,
