@@ -3,7 +3,7 @@
     {
       "experiment_name": "test_artifact_fix",
       "board_size": 14,
-      "episodes": 30,
+      "episodes": 29,
       "eval_frequency": 10,
       "eval_games": 2,
       "log_frequency": 10,
