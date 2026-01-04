@@ -104,13 +104,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: 📦 Cache Python venv
-        uses: actions/cache@v4
-        with:
-          path: blokus-engine/.venv
-          key: venv-occidata-${{ hashFiles('blokus-engine/pyproject.toml') }}
-          restore-keys: |
-            venv-occidata-
 
       - name: 📦 Setup Python environment
         run: |
@@ -167,7 +160,7 @@ jobs:
           set -euo pipefail
           module load cuda/12.2
           cd \$(pwd)
-          source .venv/bin/activate
+          source /projects/ctb/blokus-runner/blokus-venv/bin/activate
           
           echo "🔍 GPU Information:"
           nvidia-smi
@@ -186,22 +179,22 @@ jobs:
           fi
           SLURM
           
-          JOB_ID=\$(sbatch --parsable "\$JOB_SCRIPT")
-          echo "🆔 SLURM Job ID: \$JOB_ID"
+          JOB_ID=$(sbatch --parsable "$JOB_SCRIPT")
+          echo "🆔 SLURM Job ID: $JOB_ID"
           
           # Wait for job completion
-          while squeue -j \$JOB_ID 2>/dev/null | grep -q \$JOB_ID; do
+          while squeue -j $JOB_ID 2>/dev/null | grep -q $JOB_ID; do
             sleep 30
             echo "⏳ Job still running..."
           done
           
           # Check status
-          if sacct -j \$JOB_ID --format=State --noheader | grep -q "COMPLETED"; then
+          if sacct -j $JOB_ID --format=State --noheader | grep -q "COMPLETED"; then
             echo "✅ Job completed successfully"
             exit 0
           else
             echo "❌ Job failed"
-            cat slurm-\${JOB_ID}.err 2>/dev/null || true
+            cat slurm-${JOB_ID}.err 2>/dev/null || true
             exit 1
           fi
           EOF
@@ -230,7 +223,7 @@ jobs:
             echo "success=true" >> "$GITHUB_OUTPUT"
             
             # Generate plots
-            source .venv/bin/activate
+            source /projects/ctb/blokus-runner/blokus-venv/bin/activate
             METRICS_FILE="$EXPERIMENT_DIR/metrics.csv"
             if [ -f "$METRICS_FILE" ]; then
               python scripts/plot_metrics.py "$METRICS_FILE"

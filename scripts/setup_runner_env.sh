@@ -64,9 +64,7 @@ echo "📌 Step 6: Installing additional dependencies..."
 pip install matplotlib pandas gymnasium tensorboard numpy
 echo "   ✅ Dependencies installed"
 
-
-
-# Step 8: Verify installation
+# Step 7: Verify installation
 echo ""
 echo "📌 Step 8: Verifying installation..."
 python -c "
