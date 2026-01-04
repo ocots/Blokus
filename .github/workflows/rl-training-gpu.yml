@@ -159,28 +159,75 @@ jobs:
           #SBATCH --output=$WORKDIR/slurm-%j.out
           #SBATCH --error=$WORKDIR/slurm-%j.err
           
-          set -euo pipefail
+          
+          set -euxo pipefail  # Added -x for command tracing
+          
+          echo "=========================================="
+          echo "🚀 SLURM Job Starting"
+          echo "=========================================="
+          echo "Job ID: \$SLURM_JOB_ID"
+          echo "Node: \$SLURM_NODELIST"
+          echo "Working directory should be: $WORKDIR"
+          echo ""
+          
+          echo "📦 Step 1: Loading CUDA module..."
           module load cuda/12.2
+          echo "✅ CUDA module loaded"
+          echo ""
+          
+          echo "📂 Step 2: Changing to working directory..."
+          echo "Before cd: \$(pwd)"
           cd $WORKDIR
+          echo "After cd: \$(pwd)"
+          echo "✅ Changed to working directory"
+          echo ""
+          
+          echo "🐍 Step 3: Activating Python venv..."
           source /projects/ctb/blokus-runner/blokus-venv/bin/activate
+          echo "Python: \$(which python)"
+          echo "Python version: \$(python --version)"
+          echo "✅ Venv activated"
+          echo ""
           
-          echo "🔍 GPU Information:"
+          echo "🔍 Step 4: GPU Information:"
           nvidia-smi
+          echo ""
           
-          echo "📂 Working directory: \$(pwd)"
+          echo "📋 Step 5: Listing files in working directory..."
+          ls -la
+          echo ""
+          
+          echo "🎯 Step 6: Starting training..."
+          echo "Script path: $SCRIPT_PATH"
+          echo "Experiment: $EXP_NAME"
+          echo "Command: python -u $SCRIPT_PATH --new --name $EXP_NAME --board-size $BOARD_SIZE --episodes $EPISODES --eval-freq $EVAL_FREQ --eval-games $EVAL_GAMES --log-freq $LOG_FREQ --min-buffer $MIN_BUFFER --no-video"
+          echo ""
           
           python -u "$SCRIPT_PATH" --new --name "$EXP_NAME" --board-size "$BOARD_SIZE" --episodes "$EPISODES" --eval-freq "$EVAL_FREQ" --eval-games "$EVAL_GAMES" --log-freq "$LOG_FREQ" --min-buffer "$MIN_BUFFER" --no-video | tee training_output.txt
           
+          echo ""
+          echo "✅ Training completed"
+          echo ""
+          
+          echo "📊 Step 7: Processing results..."
           ACTUAL_EXP_DIR=\$(grep "EXPERIMENT_DIR=" training_output.txt | cut -d'=' -f2)
+          echo "Experiment directory: \$ACTUAL_EXP_DIR"
           echo "EXPERIMENT_DIR=\$ACTUAL_EXP_DIR" > job_results.txt
           
           METADATA_FILE="\$ACTUAL_EXP_DIR/metadata.json"
           if [ -f "\$METADATA_FILE" ]; then
             BEST_WIN_RATE=\$(python -c "import json; print(json.load(open('\$METADATA_FILE'))['best_win_rate'])")
+            echo "Best win rate: \$BEST_WIN_RATE"
             echo "BEST_WIN_RATE=\$BEST_WIN_RATE" >> job_results.txt
           else
+            echo "⚠️  Metadata file not found"
             echo "BEST_WIN_RATE=0.0" >> job_results.txt
           fi
+          
+          echo ""
+          echo "=========================================="
+          echo "✅ SLURM Job Completed Successfully"
+          echo "=========================================="
           SLURM
           
           JOB_ID=$(sbatch --parsable "$JOB_SCRIPT")
