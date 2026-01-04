@@ -119,7 +119,10 @@ jobs:
           source "$VENV_DIR/bin/activate"
           echo "✅ Using persistent venv: $VENV_DIR"
           echo "   Python: $(python --version)"
-          
+        
+          # Upgrade pip to ensure support for modern pyproject.toml editable installs
+          pip install --upgrade pip
+        
           # Install/update blokus package (fast since deps are already installed)
           cd blokus-engine
           pip install -e ".[dev]" --quiet
