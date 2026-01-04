@@ -1,4 +1,5 @@
-
+import matplotlib
+matplotlib.use('Agg') # Force non-interactive backend
 import matplotlib.pyplot as plt
 import pandas as pd
 import sys
@@ -19,20 +20,20 @@ def plot_metrics(csv_path, output_path):
     plt.figure(figsize=(12, 6))
     
     # Plot win rate if available
-    if 'win_rate' in df.columns:
+    if 'env/win_rate_100' in df.columns:
         plt.subplot(1, 2, 1)
-        plt.plot(df['epoch'], df['win_rate'], label='Win Rate', color='blue')
-        plt.xlabel('Epoch')
+        plt.plot(df['episode'], df['env/win_rate_100'], '-o', label='Win Rate (100)', color='blue')
+        plt.xlabel('Episode')
         plt.ylabel('Win Rate')
         plt.title('Win Rate over Time')
         plt.grid(True)
         plt.legend()
     
     # Plot loss if available
-    if 'loss' in df.columns:
+    if 'train/loss' in df.columns:
         plt.subplot(1, 2, 2)
-        plt.plot(df['epoch'], df['loss'], label='Loss', color='red')
-        plt.xlabel('Epoch')
+        plt.plot(df['episode'], df['train/loss'], '-o', label='Loss', color='red')
+        plt.xlabel('Episode')
         plt.ylabel('Loss')
         plt.title('Training Loss')
         plt.grid(True)
