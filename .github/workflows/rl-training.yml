@@ -60,6 +60,7 @@ jobs:
       log_frequency: ${{ steps.params.outputs.log_frequency }}
       min_buffer_size: ${{ steps.params.outputs.min_buffer_size }}
       resume: ${{ steps.params.outputs.resume }}
+      device: ${{ steps.params.outputs.device }}
       
     steps:
       - name: 📥 Checkout repository
@@ -90,7 +91,8 @@ jobs:
             EVAL_GAMES=$(jq -r '.queue[0].eval_games // 100' $JSON_FILE)
             LOG_FREQ=$(jq -r '.queue[0].log_frequency // 100' $JSON_FILE)
             MIN_BUFFER=$(jq -r '.queue[0].min_buffer_size // 10000' $JSON_FILE)
-            RESUME=$(jq -r '.queue[0].resume // false' $JSON_FILE)
+            RESUME=$(jq -r '.queue[0].resume // "false"' "$QUEUE_FILE")
+            DEVICE=$(jq -r '.queue[0].device // "cpu"' "$QUEUE_FILE")
             
             echo "experiment_name=$EXP_NAME" >> "$GITHUB_OUTPUT"
             echo "board_size=$BOARD_SIZE" >> "$GITHUB_OUTPUT"
@@ -100,6 +102,7 @@ jobs:
             echo "log_frequency=$LOG_FREQ" >> "$GITHUB_OUTPUT"
             echo "min_buffer_size=$MIN_BUFFER" >> "$GITHUB_OUTPUT"
             echo "resume=$RESUME" >> "$GITHUB_OUTPUT"
+            echo "device=$DEVICE" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Select runner
@@ -140,6 +143,8 @@ jobs:
     name: 🧠 Train RL Agent
     runs-on: ${{ fromJson(needs.setup.outputs.runner) }}
     needs: setup
+    # Skip if device is explicitly GPU (handled by rl-training-gpu.yml)
+    if: needs.setup.outputs.device != 'gpu'
     timeout-minutes: 720
     
     outputs:
