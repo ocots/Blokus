@@ -121,6 +121,9 @@ jobs:
           
           cd blokus-engine
           
+          # Load Python module first
+          module load python/3.11 || echo "⚠️ Python 3.11 module not available, using default $(python3 --version)"
+          
           # Create venv if needed
           if [ ! -d ".venv" ]; then
             python3 -m venv .venv
