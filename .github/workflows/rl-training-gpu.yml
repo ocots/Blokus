@@ -185,27 +185,57 @@ jobs:
           
           JOB_ID=$(sbatch --parsable "$JOB_SCRIPT")
           echo "🆔 SLURM Job ID: $JOB_ID"
+          echo "📂 Output file: $WORKDIR/slurm-${JOB_ID}.out"
+          echo "📂 Error file: $WORKDIR/slurm-${JOB_ID}.err"
           
-          # Wait for job completion
-          while squeue -j $JOB_ID 2>/dev/null | grep -q $JOB_ID; do
-            sleep 30
-            echo "⏳ Job still running..."
+          # Wait for output file to be created
+          echo "⏳ Waiting for SLURM job to start..."
+          WAIT_COUNT=0
+          while [ ! -f "$WORKDIR/slurm-${JOB_ID}.out" ] && [ $WAIT_COUNT -lt 60 ]; do
+            sleep 2
+            WAIT_COUNT=$((WAIT_COUNT + 1))
           done
           
-          # Check status and display output
-          echo ""
-          echo "📋 SLURM Job Output:"
-          echo "===================="
-          cat $WORKDIR/slurm-${JOB_ID}.out 2>/dev/null || echo "(no stdout)"
-          echo ""
+          if [ -f "$WORKDIR/slurm-${JOB_ID}.out" ]; then
+            echo "✅ Output file created, streaming output..."
+            echo "=========================================="
+            
+            # Tail output in background
+            tail -f "$WORKDIR/slurm-${JOB_ID}.out" &
+            TAIL_PID=$!
+            
+            # Wait for job completion
+            while squeue -j $JOB_ID 2>/dev/null | grep -q $JOB_ID; do
+              sleep 30
+            done
+            
+            # Kill tail process
+            kill $TAIL_PID 2>/dev/null || true
+            sleep 1
+            
+            echo "=========================================="
+            echo "📋 Final output (ensuring nothing was missed):"
+            cat "$WORKDIR/slurm-${JOB_ID}.out"
+          else
+            echo "⚠️  Output file not created after 2 minutes"
+            echo "Checking job status..."
+          fi
           
+          # Check status
+          echo ""
           if sacct -j $JOB_ID --format=State --noheader | grep -q "COMPLETED"; then
             echo "✅ Job completed successfully"
+            
+            # Debug: show what files were created
+            echo ""
+            echo "📁 Files in workspace:"
+            ls -lh "$WORKDIR/" | grep -E "(slurm|job_results|training_output)" || echo "No relevant files found"
+            
             exit 0
           else
             echo "❌ Job failed"
             echo "📋 SLURM Job Errors:"
-            cat $WORKDIR/slurm-${JOB_ID}.err 2>/dev/null || echo "(no stderr)"
+            cat "$WORKDIR/slurm-${JOB_ID}.err" 2>/dev/null || echo "(no stderr)"
             exit 1
           fi
           EOF
