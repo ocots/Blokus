@@ -337,7 +337,7 @@ jobs:
             source /projects/ctb/blokus-runner/blokus-venv/bin/activate
             METRICS_FILE="$EXPERIMENT_DIR/metrics.csv"
             if [ -f "$METRICS_FILE" ]; then
-              python scripts/plot_metrics.py "$METRICS_FILE"
+              python scripts/plot_metrics.py "$METRICS_FILE" "$EXPERIMENT_DIR/training_plot.png"
             fi
           else
             echo "success=false" >> "$GITHUB_OUTPUT"
