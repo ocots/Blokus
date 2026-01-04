@@ -49,12 +49,16 @@ def create_env(config: TrainingConfig) -> BlokusEnv:
 def train_episode(
     env: BlokusEnv,
     agent: DQNAgent,
-    opponent: RandomAgent
+    opponent: RandomAgent,
+    update_frequency: int = 4
 ) -> dict:
     """
     Train one episode of self-play.
     
     Agent plays as player 0, opponent as player 1.
+    
+    Args:
+        update_frequency: Number of agent steps between network updates
     
     Returns:
         Episode stats dict
@@ -63,6 +67,7 @@ def train_episode(
     done = False
     episode_reward = 0.0
     episode_steps = 0
+    agent_steps = 0
     losses = []
     
     agent.train_mode()
@@ -98,11 +103,13 @@ def train_episode(
             )
             
             episode_reward += reward
+            agent_steps += 1
             
-            # Training step
-            metrics = agent.update()
-            if "loss" in metrics:
-                losses.append(metrics["loss"])
+            # Training step (batched)
+            if agent_steps % update_frequency == 0:
+                metrics = agent.update()
+                if "loss" in metrics:
+                    losses.append(metrics["loss"])
             
             obs = next_obs
             info = next_info
@@ -113,6 +120,12 @@ def train_episode(
             done = terminated or truncated
         
         episode_steps += 1
+    
+    # Final update if there are remaining transitions
+    if agent_steps % update_frequency != 0:
+        metrics = agent.update()
+        if "loss" in metrics:
+            losses.append(metrics["loss"])
     
     # Decay epsilon after episode
     agent.decay_epsilon()

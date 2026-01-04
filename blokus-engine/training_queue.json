@@ -1,13 +1,13 @@
 {
   "queue": [
     {
-      "experiment_name": "duo_v1_prod_10k",
+      "experiment_name": "duo_v1_1k",
       "board_size": 14,
-      "episodes": 10000,
-      "eval_frequency": 500,
+      "episodes": 1000,
+      "eval_frequency": 100,
       "eval_games": 50,
-      "log_frequency": 100,
-      "min_buffer_size": 10000,
+      "log_frequency": 10,
+      "min_buffer_size": 1000,
       "resume": false
     }
   ]
