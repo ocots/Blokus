@@ -1,13 +1,13 @@
 {
   "queue": [
     {
-      "experiment_name": "duo_gpu_test_cache",
+      "experiment_name": "duo_gpu_test_v2",
       "board_size": 14,
       "episodes": 50,
-      "eval_frequency": 25,
-      "eval_games": 10,
-      "log_frequency": 5,
-      "min_buffer_size": 100,
+      "eval_frequency": 10,
+      "eval_games": 5,
+      "log_frequency": 1,
+      "min_buffer_size": 50,
       "resume": false
     }
   ]
