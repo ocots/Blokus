@@ -1,4 +1,4 @@
-name: RL Training (GPU-Optimized)
+name: RL Training (GPU)
 
 on:
   push:
@@ -18,57 +18,11 @@ env:
 
 jobs:
   # ─────────────────────────────────────────────────────────────
-  # Determine if Occidata GPU runner is available
-  # ─────────────────────────────────────────────────────────────
-  determine-runner:
-    name: 🧭 Determine runner
-    runs-on: ubuntu-latest
-    outputs:
-      runner: ${{ steps.pick.outputs.runner }}
-      has_gpu: ${{ steps.pick.outputs.has_gpu }}
-    steps:
-      - name: Select runner
-        id: pick
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          set -euo pipefail
-          REPO="${{ github.repository }}"
-          echo "🔍 Checking for online Occidata GPU runner in repo $REPO"
-          
-          TMP_ERR=$(mktemp)
-          if MATCH=$(gh api "repos/$REPO/actions/runners" \
-            --jq '.runners[] | select(.status=="online") | select([.labels[].name] | index("blokus")) | select([.labels[].name] | index("gpu"))' 2>"$TMP_ERR"); then
-            if [ -n "$MATCH" ]; then
-              SELECT='["self-hosted","blokus","gpu","occidata"]'
-              HAS_GPU="true"
-              echo "✅ Occidata GPU runner available"
-            else
-              SELECT='["ubuntu-latest"]'
-              HAS_GPU="false"
-              echo "ℹ️ No online GPU runner found, falling back to ubuntu-latest (CPU)"
-            fi
-          else
-            STATUS=$?
-            ERR_MSG=$(cat "$TMP_ERR" || true)
-            echo "⚠️ Failed to query runners (exit $STATUS). Falling back to ubuntu-latest."
-            if [ -n "$ERR_MSG" ]; then
-              echo "$ERR_MSG"
-            fi
-            SELECT='["ubuntu-latest"]'
-            HAS_GPU="false"
-          fi
-          rm -f "$TMP_ERR"
-          echo "runner=$SELECT" >> "$GITHUB_OUTPUT"
-          echo "has_gpu=$HAS_GPU" >> "$GITHUB_OUTPUT"
-
-  # ─────────────────────────────────────────────────────────────
   # Parse training queue
   # ─────────────────────────────────────────────────────────────
   setup:
     name: 🔧 Parse training configuration
     runs-on: ubuntu-latest
-    needs: determine-runner
     outputs:
       experiment_name: ${{ steps.parse.outputs.experiment_name }}
       board_size: ${{ steps.parse.outputs.board_size }}
@@ -130,45 +84,29 @@ jobs:
           echo "resume=$RESUME" >> "$GITHUB_OUTPUT"
 
   # ─────────────────────────────────────────────────────────────
-  # Training job (GPU or CPU)
+  # GPU Training on Occidata
   # ─────────────────────────────────────────────────────────────
   train:
-    name: 🚀 RL Training
-    runs-on: ${{ fromJson(needs.determine-runner.outputs.runner) }}
-    needs: [determine-runner, setup]
+    name: 🚀 RL Training (GPU)
+    runs-on: [self-hosted, blokus, occidata]
+    needs: [setup]
     if: needs.setup.outputs.experiment_name != 'none'
+    
+    env:
+      JULIA_DEPOT_PATH: /projects/ctb/blokus-runner/julia_depot
+      
     outputs:
-      experiment_dir: ${{ steps.train.outputs.experiment_dir }}
-      best_win_rate: ${{ steps.train.outputs.best_win_rate }}
-      success: ${{ steps.train.outputs.success }}
+      experiment_dir: ${{ steps.collect.outputs.experiment_dir }}
+      best_win_rate: ${{ steps.collect.outputs.best_win_rate }}
+      success: ${{ steps.collect.outputs.success }}
+      
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: 🐍 Setup Python (GitHub runner)
-        if: contains(needs.determine-runner.outputs.runner, 'ubuntu-latest')
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
-          cache: 'pip'
-
-      - name: 📦 Install dependencies (GitHub runner - CPU)
-        if: contains(needs.determine-runner.outputs.runner, 'ubuntu-latest')
+      - name: 📦 Setup Python environment
         run: |
           cd blokus-engine
-          pip install --index-url https://download.pytorch.org/whl/cpu \
-            torch torchvision --extra-index-url https://pypi.org/simple
-          pip install -e ".[dev]"
-
-      - name: 📦 Install dependencies (Occidata - GPU)
-        if: contains(needs.determine-runner.outputs.runner, 'self-hosted')
-        shell: bash
-        run: |
-          set -euo pipefail
-          cd blokus-engine
-          
-          # Load CUDA module
-          module load cuda/12.2 || echo "⚠️ CUDA module not available"
           
           # Create venv if needed
           if [ ! -d ".venv" ]; then
@@ -177,61 +115,38 @@ jobs:
           
           source .venv/bin/activate
           
+          # Load CUDA module
+          module load cuda/12.2 || echo "⚠️ CUDA module not available"
+          
           # Install PyTorch with CUDA support
+          pip install --upgrade pip
           pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
+          pip install matplotlib pandas
           pip install -e ".[dev]"
           
           # Verify GPU
-          python -c "import torch; print(f'CUDA available: {torch.cuda.is_available()}'); print(f'GPU: {torch.cuda.get_device_name(0) if torch.cuda.is_available() else \"N/A\"}')"
+          python -c "import torch; print(f'✅ CUDA available: {torch.cuda.is_available()}'); print(f'GPU: {torch.cuda.get_device_name(0) if torch.cuda.is_available() else \"N/A\"}')"
 
-      - name: 🏋️ Run training (GitHub CPU)
-        if: contains(needs.determine-runner.outputs.runner, 'ubuntu-latest')
-        id: train_cpu
-        shell: bash
+      - name: 🏋️ Dispatch training to SLURM
         run: |
           cd blokus-engine
           
-          EXP_NAME="${{ needs.setup.outputs.experiment_name }}"
-          RESUME="${{ needs.setup.outputs.resume }}"
+          # Create SLURM dispatch script
+          cat > dispatch_training.sh <<'EOF'
+          #!/bin/bash
+          set -euo pipefail
           
-          MODE_FLAG="--new"
-          if [ "$RESUME" = "true" ]; then
-            MODE_FLAG="--resume $EXP_NAME"
-          fi
+          SCRIPT_PATH="$1"
+          EXP_NAME="$2"
+          BOARD_SIZE="$3"
+          EPISODES="$4"
+          EVAL_FREQ="$5"
+          EVAL_GAMES="$6"
+          LOG_FREQ="$7"
+          MIN_BUFFER="$8"
           
-          python -u scripts/train.py \
-            $MODE_FLAG \
-            --name "$EXP_NAME" \
-            --board-size "${{ needs.setup.outputs.board_size }}" \
-            --episodes "${{ needs.setup.outputs.episodes }}" \
-            --eval-freq "${{ needs.setup.outputs.eval_frequency }}" \
-            --eval-games "${{ needs.setup.outputs.eval_games }}" \
-            --log-freq "${{ needs.setup.outputs.log_frequency }}" \
-            --min-buffer "${{ needs.setup.outputs.min_buffer_size }}" \
-            --no-video | tee training_output.txt
-          
-          # Extract experiment directory
-          ACTUAL_EXP_DIR=$(grep "EXPERIMENT_DIR=" training_output.txt | cut -d'=' -f2)
-          echo "experiment_dir=$ACTUAL_EXP_DIR" >> "$GITHUB_OUTPUT"
-          
-          METADATA_FILE="$ACTUAL_EXP_DIR/metadata.json"
-          if [ -f "$METADATA_FILE" ]; then
-            BEST_WIN_RATE=$(python -c "import json; print(json.load(open('$METADATA_FILE'))['best_win_rate'])")
-            echo "best_win_rate=$BEST_WIN_RATE" >> "$GITHUB_OUTPUT"
-          else
-            echo "best_win_rate=0.0" >> "$GITHUB_OUTPUT"
-          fi
-          echo "success=true" >> "$GITHUB_OUTPUT"
-
-      - name: 🏋️ Run training (Occidata GPU via SLURM)
-        if: contains(needs.determine-runner.outputs.runner, 'self-hosted')
-        id: train_gpu
-        shell: bash
-        run: |
-          cd blokus-engine
-          
-          # Create SLURM job script
-          cat > train_gpu.sh <<'EOF'
+          JOB_SCRIPT=$(mktemp)
+          cat > "$JOB_SCRIPT" <<SLURM
           #!/bin/bash
           #SBATCH --job-name=blokus-rl
           #SBATCH --partition=GPUNodes
@@ -244,87 +159,93 @@ jobs:
           
           set -euo pipefail
           module load cuda/12.2
-          cd /projects/ctb/blokus-runner/_work/ocots/Blokus/Blokus/blokus-engine
+          cd \$(pwd)
           source .venv/bin/activate
           
-          echo "GPU Information:"
+          echo "🔍 GPU Information:"
           nvidia-smi
           
-          python -u scripts/train.py --new --name "${{ needs.setup.outputs.experiment_name }}" --board-size "${{ needs.setup.outputs.board_size }}" --episodes "${{ needs.setup.outputs.episodes }}" --eval-freq "${{ needs.setup.outputs.eval_frequency }}" --eval-games "${{ needs.setup.outputs.eval_games }}" --log-freq "${{ needs.setup.outputs.log_frequency }}" --min-buffer "${{ needs.setup.outputs.min_buffer_size }}" --no-video | tee training_output.txt
+          python -u "\$SCRIPT_PATH" --new --name "\$EXP_NAME" --board-size "\$BOARD_SIZE" --episodes "\$EPISODES" --eval-freq "\$EVAL_FREQ" --eval-games "\$EVAL_GAMES" --log-freq "\$LOG_FREQ" --min-buffer "\$MIN_BUFFER" --no-video | tee training_output.txt
           
-          ACTUAL_EXP_DIR=$(grep "EXPERIMENT_DIR=" training_output.txt | cut -d'=' -f2)
-          echo "EXPERIMENT_DIR=$ACTUAL_EXP_DIR" > job_results.txt
+          ACTUAL_EXP_DIR=\$(grep "EXPERIMENT_DIR=" training_output.txt | cut -d'=' -f2)
+          echo "EXPERIMENT_DIR=\$ACTUAL_EXP_DIR" > job_results.txt
           
-          METADATA_FILE="$ACTUAL_EXP_DIR/metadata.json"
-          if [ -f "$METADATA_FILE" ]; then
-            BEST_WIN_RATE=$(python -c "import json; print(json.load(open('$METADATA_FILE'))['best_win_rate'])")
-            echo "BEST_WIN_RATE=$BEST_WIN_RATE" >> job_results.txt
+          METADATA_FILE="\$ACTUAL_EXP_DIR/metadata.json"
+          if [ -f "\$METADATA_FILE" ]; then
+            BEST_WIN_RATE=\$(python -c "import json; print(json.load(open('\$METADATA_FILE'))['best_win_rate'])")
+            echo "BEST_WIN_RATE=\$BEST_WIN_RATE" >> job_results.txt
           else
             echo "BEST_WIN_RATE=0.0" >> job_results.txt
           fi
-          EOF
+          SLURM
           
-          # Submit job and wait
-          echo "Submitting SLURM job..."
-          JOB_ID=$(sbatch --parsable train_gpu.sh)
-          echo "Job ID: $JOB_ID"
+          JOB_ID=\$(sbatch --parsable "\$JOB_SCRIPT")
+          echo "🆔 SLURM Job ID: \$JOB_ID"
           
-          # Wait for job
-          while squeue -j $JOB_ID 2>/dev/null | grep -q $JOB_ID; do
+          # Wait for job completion
+          while squeue -j \$JOB_ID 2>/dev/null | grep -q \$JOB_ID; do
             sleep 30
+            echo "⏳ Job still running..."
           done
           
-          # Check results
-          if sacct -j $JOB_ID --format=State --noheader | grep -q "COMPLETED"; then
+          # Check status
+          if sacct -j \$JOB_ID --format=State --noheader | grep -q "COMPLETED"; then
+            echo "✅ Job completed successfully"
+            exit 0
+          else
+            echo "❌ Job failed"
+            cat slurm-\${JOB_ID}.err 2>/dev/null || true
+            exit 1
+          fi
+          EOF
+          
+          chmod +x dispatch_training.sh
+          ./dispatch_training.sh \
+            "scripts/train.py" \
+            "${{ needs.setup.outputs.experiment_name }}" \
+            "${{ needs.setup.outputs.board_size }}" \
+            "${{ needs.setup.outputs.episodes }}" \
+            "${{ needs.setup.outputs.eval_frequency }}" \
+            "${{ needs.setup.outputs.eval_games }}" \
+            "${{ needs.setup.outputs.log_frequency }}" \
+            "${{ needs.setup.outputs.min_buffer_size }}"
+
+      - name: 📊 Collect results
+        id: collect
+        if: always()
+        run: |
+          cd blokus-engine
+          
+          if [ -f "job_results.txt" ]; then
             source job_results.txt
             echo "experiment_dir=$EXPERIMENT_DIR" >> "$GITHUB_OUTPUT"
             echo "best_win_rate=$BEST_WIN_RATE" >> "$GITHUB_OUTPUT"
             echo "success=true" >> "$GITHUB_OUTPUT"
-          else
-            cat slurm-${JOB_ID}.err || true
-            exit 1
-          fi
-
-      - name: 📊 Set training outputs
-        id: train
-        run: |
-          if [ "${{ steps.train_cpu.outcome }}" = "success" ]; then
-            echo "experiment_dir=${{ steps.train_cpu.outputs.experiment_dir }}" >> "$GITHUB_OUTPUT"
-            echo "best_win_rate=${{ steps.train_cpu.outputs.best_win_rate }}" >> "$GITHUB_OUTPUT"
-            echo "success=${{ steps.train_cpu.outputs.success }}" >> "$GITHUB_OUTPUT"
-          elif [ "${{ steps.train_gpu.outcome }}" = "success" ]; then
-            echo "experiment_dir=${{ steps.train_gpu.outputs.experiment_dir }}" >> "$GITHUB_OUTPUT"
-            echo "best_win_rate=${{ steps.train_gpu.outputs.best_win_rate }}" >> "$GITHUB_OUTPUT"
-            echo "success=${{ steps.train_gpu.outputs.success }}" >> "$GITHUB_OUTPUT"
+            
+            # Generate plots
+            source .venv/bin/activate
+            METRICS_FILE="$EXPERIMENT_DIR/metrics.csv"
+            if [ -f "$METRICS_FILE" ]; then
+              python scripts/plot_metrics.py "$METRICS_FILE"
+            fi
           else
             echo "success=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: 📊 Generate training plots
-        if: steps.train.outputs.success == 'true'
-        run: |
-          cd blokus-engine
-          if [ -d ".venv" ]; then source .venv/bin/activate; fi
-          
-          METRICS_FILE="${{ steps.train.outputs.experiment_dir }}/metrics.csv"
-          if [ -f "$METRICS_FILE" ]; then
-            python scripts/plot_metrics.py "$METRICS_FILE"
-          fi
-
       - name: 📦 Upload training artifacts
-        if: steps.train.outputs.success == 'true'
+        if: steps.collect.outputs.success == 'true'
         uses: actions/upload-artifact@v4
         with:
-          name: training-results
+          name: training-results-gpu
           path: |
-            ${{ steps.train.outputs.experiment_dir }}/model.pt
-            ${{ steps.train.outputs.experiment_dir }}/metadata.json
-            ${{ steps.train.outputs.experiment_dir }}/metrics.csv
-            ${{ steps.train.outputs.experiment_dir }}/training_plot.png
+            ${{ steps.collect.outputs.experiment_dir }}/model.pt
+            ${{ steps.collect.outputs.experiment_dir }}/metadata.json
+            ${{ steps.collect.outputs.experiment_dir }}/metrics.csv
+            ${{ steps.collect.outputs.experiment_dir }}/training_plot.png
           retention-days: 30
 
   # ─────────────────────────────────────────────────────────────
-  # Commit results back to branch
+  # Commit results
   # ─────────────────────────────────────────────────────────────
   commit-results:
     name: 💾 Commit training results
@@ -340,7 +261,7 @@ jobs:
       - name: Download training artifacts
         uses: actions/download-artifact@v4
         with:
-          name: training-results
+          name: training-results-gpu
           path: ${{ needs.train.outputs.experiment_dir }}
 
       - name: Commit and push results
@@ -349,9 +270,9 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           
           git add ${{ needs.train.outputs.experiment_dir }}
-          git commit -m "🤖 Training results: ${{ needs.train.outputs.experiment_dir }}
+          git commit -m "🤖 GPU Training results: ${{ needs.train.outputs.experiment_dir }}
           
           Best win rate: ${{ needs.train.outputs.best_win_rate }}
-          Runner: ${{ needs.determine-runner.outputs.has_gpu == 'true' && 'GPU (Occidata)' || 'CPU (GitHub)' }}"
+          Trained on: Occidata GPU (GTX 1080 Ti)" || echo "No changes to commit"
           
-          git push
+          git push || echo "Nothing to push"
