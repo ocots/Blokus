@@ -107,6 +107,7 @@ jobs:
     runs-on: [self-hosted, blokus, occidata]
     needs: [setup]
     if: needs.setup.outputs.experiment_name != 'none' && needs.setup.outputs.device == 'gpu'
+    timeout-minutes: 720
     
     env:
       JULIA_DEPOT_PATH: /projects/ctb/blokus-runner/julia_depot
