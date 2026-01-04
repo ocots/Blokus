@@ -72,7 +72,7 @@ jobs:
           EPSILON_DECAY=$(jq -r '.queue[0].epsilon_decay // "50000"' "$QUEUE_FILE")
           LEARNING_RATE=$(jq -r '.queue[0].learning_rate // "0.0001"' "$QUEUE_FILE")
           BATCH_SIZE=$(jq -r '.queue[0].batch_size // "64"' "$QUEUE_FILE")
-          UPLOAD_MODEL=$(jq -r '.queue[0].upload_model // "true"' "$QUEUE_FILE")
+          UPLOAD_MODEL=$(jq -r 'if .queue[0].upload_model == null then "true" else .queue[0].upload_model end' "$QUEUE_FILE")
           
           echo "📋 Training Configuration:"
           echo "  Experiment: $EXP_NAME"
