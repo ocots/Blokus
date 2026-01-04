@@ -2,22 +2,12 @@
   "queue": [
     {
       "experiment_name": "verify_matplotlib_fix",
-      "board_size": 5,
+      "board_size": 14,
       "episodes": 10,
       "eval_frequency": 5,
       "eval_games": 2,
       "log_frequency": 5,
       "min_buffer_size": 10,
-      "resume": false
-    },
-    {
-      "experiment_name": "duo_gpu_2h_run_v1",
-      "board_size": 14,
-      "episodes": 1500,
-      "eval_frequency": 50,
-      "eval_games": 10,
-      "log_frequency": 10,
-      "min_buffer_size": 1000,
       "resume": false
     }
   ]
