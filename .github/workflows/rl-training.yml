@@ -61,6 +61,9 @@ jobs:
       min_buffer_size: ${{ steps.params.outputs.min_buffer_size }}
       resume: ${{ steps.params.outputs.resume }}
       device: ${{ steps.params.outputs.device }}
+      epsilon_decay: ${{ steps.params.outputs.epsilon_decay }}
+      learning_rate: ${{ steps.params.outputs.learning_rate }}
+      batch_size: ${{ steps.params.outputs.batch_size }}
       
     steps:
       - name: 📥 Checkout repository
@@ -93,6 +96,9 @@ jobs:
             MIN_BUFFER=$(jq -r '.queue[0].min_buffer_size // 10000' $JSON_FILE)
             RESUME=$(jq -r '.queue[0].resume // "false"' "$JSON_FILE")
             DEVICE=$(jq -r '.queue[0].device // "cpu"' "$JSON_FILE")
+            EPSILON_DECAY=$(jq -r '.queue[0].epsilon_decay // "50000"' "$JSON_FILE")
+            LEARNING_RATE=$(jq -r '.queue[0].learning_rate // "0.0001"' "$JSON_FILE")
+            BATCH_SIZE=$(jq -r '.queue[0].batch_size // "64"' "$JSON_FILE")
             
             echo "experiment_name=$EXP_NAME" >> "$GITHUB_OUTPUT"
             echo "board_size=$BOARD_SIZE" >> "$GITHUB_OUTPUT"
@@ -103,6 +109,9 @@ jobs:
             echo "min_buffer_size=$MIN_BUFFER" >> "$GITHUB_OUTPUT"
             echo "resume=$RESUME" >> "$GITHUB_OUTPUT"
             echo "device=$DEVICE" >> "$GITHUB_OUTPUT"
+            echo "epsilon_decay=$EPSILON_DECAY" >> "$GITHUB_OUTPUT"
+            echo "learning_rate=$LEARNING_RATE" >> "$GITHUB_OUTPUT"
+            echo "batch_size=$BATCH_SIZE" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Select runner
@@ -213,6 +222,9 @@ jobs:
             --eval-games "${{ needs.setup.outputs.eval_games }}" \
             --log-freq "${{ needs.setup.outputs.log_frequency }}" \
             --min-buffer "${{ needs.setup.outputs.min_buffer_size }}" \
+            --epsilon-decay "${{ needs.setup.outputs.epsilon_decay }}" \
+            --lr "${{ needs.setup.outputs.learning_rate }}" \
+            --batch-size "${{ needs.setup.outputs.batch_size }}" \
             --no-video | tee training_output.txt
           
           # Extract the actual experiment directory from output
