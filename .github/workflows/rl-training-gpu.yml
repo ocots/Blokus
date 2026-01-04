@@ -130,20 +130,22 @@ jobs:
       - name: 🏋️ Dispatch training to SLURM
         run: |
           cd blokus-engine
+          WORKDIR=$(pwd)
           
           # Create SLURM dispatch script
           cat > dispatch_training.sh <<'EOF'
           #!/bin/bash
           set -euo pipefail
           
-          SCRIPT_PATH="$1"
-          EXP_NAME="$2"
-          BOARD_SIZE="$3"
-          EPISODES="$4"
-          EVAL_FREQ="$5"
-          EVAL_GAMES="$6"
-          LOG_FREQ="$7"
-          MIN_BUFFER="$8"
+          WORKDIR="$1"
+          SCRIPT_PATH="$2"
+          EXP_NAME="$3"
+          BOARD_SIZE="$4"
+          EPISODES="$5"
+          EVAL_FREQ="$6"
+          EVAL_GAMES="$7"
+          LOG_FREQ="$8"
+          MIN_BUFFER="$9"
           
           JOB_SCRIPT=$(mktemp)
           cat > "$JOB_SCRIPT" <<SLURM
@@ -154,18 +156,20 @@ jobs:
           #SBATCH --cpus-per-task=4
           #SBATCH --mem=32G
           #SBATCH --time=06:00:00
-          #SBATCH --output=slurm-%j.out
-          #SBATCH --error=slurm-%j.err
+          #SBATCH --output=$WORKDIR/slurm-%j.out
+          #SBATCH --error=$WORKDIR/slurm-%j.err
           
           set -euo pipefail
           module load cuda/12.2
-          cd \$(pwd)
+          cd $WORKDIR
           source /projects/ctb/blokus-runner/blokus-venv/bin/activate
           
           echo "🔍 GPU Information:"
           nvidia-smi
           
-          python -u "\$SCRIPT_PATH" --new --name "\$EXP_NAME" --board-size "\$BOARD_SIZE" --episodes "\$EPISODES" --eval-freq "\$EVAL_FREQ" --eval-games "\$EVAL_GAMES" --log-freq "\$LOG_FREQ" --min-buffer "\$MIN_BUFFER" --no-video | tee training_output.txt
+          echo "📂 Working directory: \$(pwd)"
+          
+          python -u "$SCRIPT_PATH" --new --name "$EXP_NAME" --board-size "$BOARD_SIZE" --episodes "$EPISODES" --eval-freq "$EVAL_FREQ" --eval-games "$EVAL_GAMES" --log-freq "$LOG_FREQ" --min-buffer "$MIN_BUFFER" --no-video | tee training_output.txt
           
           ACTUAL_EXP_DIR=\$(grep "EXPERIMENT_DIR=" training_output.txt | cut -d'=' -f2)
           echo "EXPERIMENT_DIR=\$ACTUAL_EXP_DIR" > job_results.txt
@@ -188,19 +192,27 @@ jobs:
             echo "⏳ Job still running..."
           done
           
-          # Check status
+          # Check status and display output
+          echo ""
+          echo "📋 SLURM Job Output:"
+          echo "===================="
+          cat $WORKDIR/slurm-${JOB_ID}.out 2>/dev/null || echo "(no stdout)"
+          echo ""
+          
           if sacct -j $JOB_ID --format=State --noheader | grep -q "COMPLETED"; then
             echo "✅ Job completed successfully"
             exit 0
           else
             echo "❌ Job failed"
-            cat slurm-${JOB_ID}.err 2>/dev/null || true
+            echo "📋 SLURM Job Errors:"
+            cat $WORKDIR/slurm-${JOB_ID}.err 2>/dev/null || echo "(no stderr)"
             exit 1
           fi
           EOF
           
           chmod +x dispatch_training.sh
           ./dispatch_training.sh \
+            "$WORKDIR" \
             "scripts/train.py" \
             "${{ needs.setup.outputs.experiment_name }}" \
             "${{ needs.setup.outputs.board_size }}" \
