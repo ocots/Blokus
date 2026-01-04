@@ -34,6 +34,8 @@ jobs:
       resume: ${{ steps.parse.outputs.resume }}
       device: ${{ steps.parse.outputs.device }}
       epsilon_decay: ${{ steps.parse.outputs.epsilon_decay }}
+      learning_rate: ${{ steps.parse.outputs.learning_rate }}
+      batch_size: ${{ steps.parse.outputs.batch_size }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -67,6 +69,8 @@ jobs:
           RESUME=$(jq -r '.queue[0].resume // "false"' "$QUEUE_FILE")
           DEVICE=$(jq -r '.queue[0].device // "cpu"' "$QUEUE_FILE")
           EPSILON_DECAY=$(jq -r '.queue[0].epsilon_decay // "50000"' "$QUEUE_FILE")
+          LEARNING_RATE=$(jq -r '.queue[0].learning_rate // "0.0001"' "$QUEUE_FILE")
+          BATCH_SIZE=$(jq -r '.queue[0].batch_size // "64"' "$QUEUE_FILE")
           
           echo "📋 Training Configuration:"
           echo "  Experiment: $EXP_NAME"
@@ -79,6 +83,8 @@ jobs:
           echo "  Resume: $RESUME"
           echo "  Device: $DEVICE"
           echo "  Epsilon Decay: $EPSILON_DECAY"
+          echo "  Learning Rate: $LEARNING_RATE"
+          echo "  Batch Size: $BATCH_SIZE"
           
           echo "experiment_name=$EXP_NAME" >> "$GITHUB_OUTPUT"
           echo "board_size=$BOARD_SIZE" >> "$GITHUB_OUTPUT"
@@ -90,6 +96,8 @@ jobs:
           echo "resume=$RESUME" >> "$GITHUB_OUTPUT"
           echo "device=$DEVICE" >> "$GITHUB_OUTPUT"
           echo "epsilon_decay=$EPSILON_DECAY" >> "$GITHUB_OUTPUT"
+          echo "learning_rate=$LEARNING_RATE" >> "$GITHUB_OUTPUT"
+          echo "batch_size=$BATCH_SIZE" >> "$GITHUB_OUTPUT"
 
   # ─────────────────────────────────────────────────────────────
   # GPU Training on Occidata
@@ -158,6 +166,8 @@ jobs:
           LOG_FREQ="$8"
           MIN_BUFFER="$9"
           EPSILON_DECAY="${10}"
+          LEARNING_RATE="${11}"
+          BATCH_SIZE="${12}"
           
           JOB_SCRIPT=$(mktemp)
           cat > "$JOB_SCRIPT" <<SLURM
@@ -216,7 +226,7 @@ jobs:
             echo 'CUDA available: '\$(python -c 'import torch; print(torch.cuda.is_available())')
             echo ''
             echo 'Starting training...'
-            python -u $SCRIPT_PATH --new --name $EXP_NAME --board-size $BOARD_SIZE --episodes $EPISODES --eval-freq $EVAL_FREQ --eval-games $EVAL_GAMES --log-freq $LOG_FREQ --min-buffer $MIN_BUFFER --epsilon-decay $EPSILON_DECAY --no-video | tee training_output.txt
+            python -u $SCRIPT_PATH --new --name $EXP_NAME --board-size $BOARD_SIZE --episodes $EPISODES --eval-freq $EVAL_FREQ --eval-games $EVAL_GAMES --log-freq $LOG_FREQ --min-buffer $MIN_BUFFER --epsilon-decay $EPSILON_DECAY --lr $LEARNING_RATE --batch-size $BATCH_SIZE --no-video | tee training_output.txt
           "
           
           echo ""
@@ -325,7 +335,9 @@ jobs:
             "${{ needs.setup.outputs.eval_games }}" \
             "${{ needs.setup.outputs.log_frequency }}" \
             "${{ needs.setup.outputs.min_buffer_size }}" \
-            "${{ needs.setup.outputs.epsilon_decay }}"
+            "${{ needs.setup.outputs.epsilon_decay }}" \
+            "${{ needs.setup.outputs.learning_rate }}" \
+            "${{ needs.setup.outputs.batch_size }}"
 
       - name: 📊 Collect results
         id: collect
