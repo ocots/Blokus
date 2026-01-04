@@ -373,16 +373,24 @@ jobs:
             echo "success=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: 📦 Upload training artifacts
+      - name: 📦 Prepare artifacts for upload
+        if: steps.collect.outputs.success == 'true'
+        run: |
+          mkdir -p ./training-artifacts
+          EXP_DIR="${{ steps.collect.outputs.experiment_dir }}"
+          cp "$EXP_DIR/model.pt" ./training-artifacts/ || echo "model.pt not found"
+          cp "$EXP_DIR/metadata.json" ./training-artifacts/
+          cp "$EXP_DIR/metrics.csv" ./training-artifacts/
+          cp "$EXP_DIR/training_plot.png" ./training-artifacts/ || echo "plot not found"
+          echo "📦 Prepared artifacts:"
+          ls -lh ./training-artifacts/
+
+      - name: 📤 Upload training artifacts
         if: steps.collect.outputs.success == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: training-results-gpu
-          path: |
-            ${{ steps.collect.outputs.experiment_dir }}/model.pt
-            ${{ steps.collect.outputs.experiment_dir }}/metadata.json
-            ${{ steps.collect.outputs.experiment_dir }}/metrics.csv
-            ${{ steps.collect.outputs.experiment_dir }}/training_plot.png
+          path: ./training-artifacts/
           retention-days: 30
 
       - name: 🚀 Deploy model to registry
@@ -438,19 +446,32 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Download training artifacts
+      - name: 📥 Download training artifacts
         uses: actions/download-artifact@v4
         with:
           name: training-results-gpu
-          path: ${{ needs.train.outputs.experiment_dir }}
+          path: ./training-artifacts
 
-      - name: Commit and push results
+      - name: 📂 Restore artifacts to correct location
+        id: restore
+        run: |
+          # Create experiment directory with timestamp
+          TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+          EXP_NAME="${{ needs.setup.outputs.experiment_name }}_${TIMESTAMP}"
+          TARGET_DIR="blokus-engine/models/experiments/${EXP_NAME}"
+          mkdir -p "$TARGET_DIR"
+          cp ./training-artifacts/* "$TARGET_DIR/"
+          echo "experiment_dir=$TARGET_DIR" >> "$GITHUB_OUTPUT"
+          echo "📂 Restored artifacts to $TARGET_DIR"
+          ls -lh "$TARGET_DIR/"
+
+      - name: 💾 Commit and push results
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           
           # Add experiment results
-          git add ${{ needs.train.outputs.experiment_dir }}
+          git add "${{ steps.restore.outputs.experiment_dir }}"
           
           # Add deployed model and registry if deployment happened
           if [ -f "blokus-engine/models/deployed/${{ needs.setup.outputs.experiment_name }}.pt" ]; then
@@ -464,7 +485,7 @@ jobs:
           
           Model deployed to registry and ready to play in browser!" || echo "No changes to commit"
           else
-            git commit -m "🤖 GPU Training results: ${{ needs.train.outputs.experiment_dir }}
+            git commit -m "🤖 GPU Training results: ${{ needs.setup.outputs.experiment_name }}
           
           Best win rate: ${{ needs.train.outputs.best_win_rate }}
           Trained on: Occidata GPU (GTX 1080 Ti)
