@@ -1,91 +1,98 @@
 #!/bin/bash
 # ============================================================
-# Blokus RL Training Environment Setup Script
+# Blokus RL Environment Setup Script (Singularity Version)
 # Run this ONCE on the Occidata runner to create a persistent venv
+# compatible with the PyTorch Singularity container.
 # ============================================================
 
 set -euo pipefail
 
 # Configuration
+# Using the tested and working container
+CONTAINER="/apps/containerCollections/CUDA12/pytorch2-NGC-24-02.sif"
 VENV_DIR="/projects/ctb/blokus-runner/blokus-venv"
 REPO_DIR="/projects/ctb/blokus-runner/_work/Blokus/Blokus/blokus-engine"
 
-echo "🔧 Blokus RL Environment Setup"
-echo "=============================="
+echo "🔧 Blokus RL Environment Setup (Singularity)"
+echo "============================================"
+echo "Container: $CONTAINER"
 echo "Venv location: $VENV_DIR"
 echo ""
 
-# Step 1: Check Python version
-echo "📌 Step 1: Checking Python version..."
-PYTHON_VERSION=$(python3 --version 2>&1)
-echo "   Found: $PYTHON_VERSION"
-
-# Step 2: Create venv directory
+# Step 1: Check Singularity
+echo "📌 Step 1: Checking Singularity..."
+if ! command -v singularity &> /dev/null; then
+    echo "❌ Singularity could not be found. Check your environment modules."
+    exit 1
+fi
+singularity --version
+echo "✅ Singularity found"
 echo ""
+
+# Step 2: Create venv directory inside container
 echo "📌 Step 2: Creating virtual environment..."
 if [ -d "$VENV_DIR" ]; then
     echo "   ⚠️  Venv already exists at $VENV_DIR"
     read -p "   Delete and recreate? (y/N) " -n 1 -r
     echo
     if [[ $REPLY =~ ^[Yy]$ ]]; then
+        echo "   🗑️  Removing old venv..."
         rm -rf "$VENV_DIR"
-        python3 -m venv "$VENV_DIR"
+        
+        echo "   🔨 Creating new venv inside container..."
+        singularity exec "$CONTAINER" virtualenv --system-site-packages "$VENV_DIR"
         echo "   ✅ Venv recreated"
     else
         echo "   ℹ️  Using existing venv"
     fi
 else
-    python3 -m venv "$VENV_DIR"
+    echo "   🔨 Creating new venv inside container..."
+    singularity exec "$CONTAINER" virtualenv --system-site-packages "$VENV_DIR"
     echo "   ✅ Venv created at $VENV_DIR"
 fi
-
-# Step 3: Activate venv
 echo ""
-echo "📌 Step 3: Activating virtual environment..."
-source "$VENV_DIR/bin/activate"
-echo "   ✅ Activated: $(which python)"
 
-# Step 4: Upgrade pip
+# Step 3: Upgrade pip and install dependencies inside container
+echo "📌 Step 3: Installing dependencies..."
+echo "   Dependencies: matplotlib, pandas, gymnasium, tensorboard, numpy, flit"
 echo ""
-echo "📌 Step 4: Upgrading pip..."
-pip install --upgrade pip --quiet
-echo "   ✅ pip $(pip --version | cut -d' ' -f2)"
 
-# Step 5: Install PyTorch with CUDA support
+singularity exec "$CONTAINER" bash -c "
+    set -e
+    source \"$VENV_DIR/bin/activate\"
+    
+    echo '   ⬆️  Upgrading pip...'
+    pip install --upgrade pip --quiet
+    
+    echo '   📦 Installing packages...'
+    pip install matplotlib pandas gymnasium tensorboard numpy flit --quiet
+    
+    echo '   ✅ Packages installed'
+"
 echo ""
-echo "📌 Step 5: Installing PyTorch with CUDA 12.1 support..."
-echo "   ⏳ This may take a few minutes (downloading ~2.5 GB)..."
-pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
-echo "   ✅ PyTorch installed"
 
-# Step 6: Install other dependencies
-echo ""
-echo "📌 Step 6: Installing additional dependencies..."
-pip install matplotlib pandas gymnasium tensorboard numpy
-echo "   ✅ Dependencies installed"
-
-# Step 7: Verify installation
-echo ""
-echo "📌 Step 8: Verifying installation..."
-python -c "
+# Step 4: Verify installation
+echo "📌 Step 4: Verifying installation..."
+singularity exec "$CONTAINER" bash -c "
+    source \"$VENV_DIR/bin/activate\"
+    python -c \"
 import torch
-print(f'   PyTorch: {torch.__version__}')
-print(f'   CUDA available: {torch.cuda.is_available()}')
-if torch.cuda.is_available():
-    print(f'   GPU: {torch.cuda.get_device_name(0)}')
-else:
-    print('   ℹ️  No GPU on login node (normal, training runs on compute nodes)')
+import numpy
+import matplotlib
+import pandas
+print(f'   ✅ PyTorch: {torch.__version__} (from container)')
+print(f'   ✅ CUDA available: {torch.cuda.is_available()} (False is normal on login node)')
+print(f'   ✅ NumPy: {numpy.__version__}')
+print(f'   ✅ Matplotlib: {matplotlib.__version__}')
+print(f'   ✅ Pandas: {pandas.__version__}')
+    \"
 "
 
-# Done
 echo ""
 echo "=============================================="
 echo "✅ Setup complete!"
-echo ""
-echo "To use this environment in GitHub Actions:"
-echo "  source $VENV_DIR/bin/activate"
-echo ""
-echo "To update dependencies in the future:"
-echo "  source $VENV_DIR/bin/activate"
-echo "  pip install <package>"
 echo "=============================================="
+echo "To use this environment manually:"
+echo "  singularity shell $CONTAINER"
+echo "  source $VENV_DIR/bin/activate"
+echo ""
