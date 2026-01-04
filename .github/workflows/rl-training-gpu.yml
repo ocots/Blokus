@@ -170,6 +170,13 @@ jobs:
           echo "Working directory should be: $WORKDIR"
           echo ""
           
+          echo "📦 Step 0: Sourcing profile for module command..."
+          source /etc/profile || true
+          if [ -f /etc/profile.d/modules.sh ]; then source /etc/profile.d/modules.sh; fi
+          if [ -f /etc/profile.d/lmod.sh ]; then source /etc/profile.d/lmod.sh; fi
+          echo "✅ Profile sourced"
+          echo ""
+          
           echo "📦 Step 1: Loading CUDA module..."
           module load cuda/12.2
           echo "✅ CUDA module loaded"
