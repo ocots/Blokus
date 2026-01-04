@@ -1,0 +1,32 @@
+{
+  "experiment_name": "duo_gpu_test_v8_20260104_165333",
+  "created_at": "2026-01-04T16:53:34.449925",
+  "updated_at": "2026-01-04T16:57:35.644771",
+  "total_episodes": 50,
+  "total_steps": 177,
+  "current_epoch": 5,
+  "best_win_rate": 1.0,
+  "best_epoch": 2,
+  "current_epsilon": 0.99905,
+  "config": {
+    "experiment_name": "duo_gpu_test_v8_20260104_165333",
+    "board_size": 14,
+    "num_players": 2,
+    "total_episodes": 50,
+    "learning_rate": 0.0001,
+    "batch_size": 64,
+    "gamma": 0.99,
+    "epsilon_start": 1.0,
+    "epsilon_end": 0.05,
+    "epsilon_decay_episodes": 50000,
+    "replay_buffer_size": 100000,
+    "min_buffer_size": 50,
+    "eval_frequency": 10,
+    "eval_games": 5,
+    "checkpoint_frequency": 10,
+    "keep_periodic_checkpoints": true,
+    "use_tensorboard": true,
+    "record_video": false,
+    "max_video_frames": 100
+  }
+}
