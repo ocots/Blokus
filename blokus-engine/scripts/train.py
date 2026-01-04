@@ -369,6 +369,8 @@ def main():
                         help="Learning rate")
     parser.add_argument("--batch-size", type=int, default=64,
                         help="Batch size")
+    parser.add_argument("--epsilon-decay", type=int, default=50000,
+                        help="Epsilon decay episodes")
     parser.add_argument("--eval-freq", type=int, default=1000,
                         help="Evaluation frequency (episodes)")
     parser.add_argument("--eval-games", type=int, default=100,
@@ -399,6 +401,7 @@ def main():
             total_episodes=args.episodes,
             learning_rate=args.lr,
             batch_size=args.batch_size,
+            epsilon_decay_episodes=args.epsilon_decay,
             eval_frequency=args.eval_freq,
             eval_games=args.eval_games,
             min_buffer_size=args.min_buffer,
