@@ -1,9 +1,9 @@
 {
   "queue": [
     {
-      "experiment_name": "duo_10h_run_v1",
+      "experiment_name": "duo_5h_run_v1",
       "board_size": 14,
-      "episodes": 10000,
+      "episodes": 5000,
       "eval_frequency": 500,
       "eval_games": 50,
       "log_frequency": 100,
