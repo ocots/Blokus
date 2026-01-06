@@ -11,6 +11,26 @@
     "enabled": true
   },
   {
+    "id": "experte5000duo",
+    "name": "Experte5000Duo",
+    "description": "IA entraînée avec Deep Q-Network sur le mode Duo 14×14 pendant 5000 épisodes. Win rate ~70% contre aléatoire.",
+    "type": "model",
+    "model_path": "deployed/experte5000duo.pt",
+    "config": {
+      "board_size": 14,
+      "num_players": 2,
+      "algorithm": "DQN"
+    },
+    "level": "intermédiaire",
+    "style": "efficace",
+    "tags": [
+      "intermediate",
+      "duo-only",
+      "slow"
+    ],
+    "enabled": true
+  },
+  {
     "id": "greedy",
     "name": "Glouton",
     "description": "Joue toujours la pièce la plus grande possible. Simple mais efficace contre les débutants.",
@@ -35,7 +55,7 @@
     "level": "expert",
     "style": "efficace",
     "tags": ["expert", "duo-only", "slow"],
-    "enabled": true
+    "enabled": false
   },
   {
     "id": "dqn_standard_v1",
@@ -54,3 +74,4 @@
     "enabled": false
   }
 ]
+
