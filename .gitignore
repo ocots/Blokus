@@ -205,3 +205,4 @@ training_queue.json
 # Ignore heavy RL models and checkpoints (stored on Occidata)
 **/checkpoint_*.pt
 **/*.pt
+.blokus.pid

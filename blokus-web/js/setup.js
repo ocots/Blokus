@@ -51,10 +51,7 @@ export class SetupManager {
         if (!this.AVAILABLE_PERSONAS) {
             this.AVAILABLE_PERSONAS = [
                 { val: 'random', label: 'Aléatoire', title: 'Joue de manière totalement aléatoire. Niveau : Débutant' },
-                { val: 'aggressive', label: 'Agressif', title: 'Cherche à bloquer l\'adversaire. Niveau : Moyen' },
-                { val: 'defensive', label: 'Défensif', title: 'Privilégie sa propre sécurité. Niveau : Moyen' },
-                { val: 'efficient', label: 'Efficace', title: 'Cherche à maximiser ses points. Niveau : Difficile' },
-                { val: 'dqn_duo_v1', label: 'Expert Duo', title: 'IA Entraînée DQN. Niveau : Expert', tags: ['expert', 'duo-only'] }
+                { val: 'experte5000duo', label: 'Experte5000Duo', title: 'IA entraînée avec Deep Q-Network sur le mode Duo 14×14. Win rate ~70% contre aléatoire.', tags: ['intermediate', 'duo-only', 'slow'] }
             ];
         }
 
