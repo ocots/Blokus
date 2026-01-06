@@ -3,7 +3,7 @@
     {
       "experiment_name": "duo_5h_run_v1",
       "board_size": 14,
-      "episodes": 5000,
+      "episodes": 10000,
       "eval_frequency": 500,
       "eval_games": 50,
       "log_frequency": 100,
@@ -11,7 +11,7 @@
       "epsilon_decay": 8000,
       "learning_rate": 0.0001,
       "batch_size": 64,
-      "resume": false,
+      "resume": true,
       "device": "gpu",
       "upload_model": true
     }
