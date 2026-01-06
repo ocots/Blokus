@@ -258,26 +258,34 @@ jobs:
           echo "Experiment: $EXP_NAME"
           echo ""
           
+          
           # Run training inside Singularity container with venv activated
           # Choose --new or --resume based on RESUME_MODE
           if [ "$RESUME_MODE" = "true" ]; then
-            TRAIN_CMD="python -u $SCRIPT_PATH --resume $EXP_NAME --board-size $BOARD_SIZE --episodes $EPISODES --eval-freq $EVAL_FREQ --eval-games $EVAL_GAMES --log-freq $LOG_FREQ --min-buffer $MIN_BUFFER --epsilon-decay $EPSILON_DECAY --lr $LEARNING_RATE --batch-size $BATCH_SIZE --no-video"
+            singularity exec \$CONTAINER bash -c "
+              set -exo pipefail
+              source \$VENV_DIR/bin/activate
+              echo 'Python: '\$(which python)
+              echo 'Python version: '\$(python --version)
+              echo 'PyTorch version: '\$(python -c 'import torch; print(torch.__version__)')
+              echo 'CUDA available: '\$(python -c 'import torch; print(torch.cuda.is_available())')
+              echo ''
+              echo 'Starting training (RESUME mode)...'
+              python -u $SCRIPT_PATH --resume $EXP_NAME --board-size $BOARD_SIZE --episodes $EPISODES --eval-freq $EVAL_FREQ --eval-games $EVAL_GAMES --log-freq $LOG_FREQ --min-buffer $MIN_BUFFER --epsilon-decay $EPSILON_DECAY --lr $LEARNING_RATE --batch-size $BATCH_SIZE --no-video | tee training_output.txt
+            "
           else
-            TRAIN_CMD="python -u $SCRIPT_PATH --new --name $EXP_NAME --board-size $BOARD_SIZE --episodes $EPISODES --eval-freq $EVAL_FREQ --eval-games $EVAL_GAMES --log-freq $LOG_FREQ --min-buffer $MIN_BUFFER --epsilon-decay $EPSILON_DECAY --lr $LEARNING_RATE --batch-size $BATCH_SIZE --no-video"
+            singularity exec \$CONTAINER bash -c "
+              set -exo pipefail
+              source \$VENV_DIR/bin/activate
+              echo 'Python: '\$(which python)
+              echo 'Python version: '\$(python --version)
+              echo 'PyTorch version: '\$(python -c 'import torch; print(torch.__version__)')
+              echo 'CUDA available: '\$(python -c 'import torch; print(torch.cuda.is_available())')
+              echo ''
+              echo 'Starting training (NEW mode)...'
+              python -u $SCRIPT_PATH --new --name $EXP_NAME --board-size $BOARD_SIZE --episodes $EPISODES --eval-freq $EVAL_FREQ --eval-games $EVAL_GAMES --log-freq $LOG_FREQ --min-buffer $MIN_BUFFER --epsilon-decay $EPSILON_DECAY --lr $LEARNING_RATE --batch-size $BATCH_SIZE --no-video | tee training_output.txt
+            "
           fi
-          
-          singularity exec \$CONTAINER bash -c "
-            set -exo pipefail
-            source \$VENV_DIR/bin/activate
-            echo 'Python: '\$(which python)
-            echo 'Python version: '\$(python --version)
-            echo 'PyTorch version: '\$(python -c 'import torch; print(torch.__version__)')
-            echo 'CUDA available: '\$(python -c 'import torch; print(torch.cuda.is_available())')
-            echo ''
-            echo 'Starting training...'
-            echo 'Command: $TRAIN_CMD'
-            $TRAIN_CMD | tee training_output.txt
-          "
           
           echo ""
           echo "Step 5: Processing results..."
