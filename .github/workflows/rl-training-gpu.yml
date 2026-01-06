@@ -152,9 +152,45 @@ jobs:
           python -c "import torch; print(f'✅ PyTorch {torch.__version__} ready')"
 
       - name: 🏋️ Dispatch training to SLURM
+        id: dispatch
         run: |
           cd blokus-engine
           WORKDIR=$(pwd)
+          
+          # Handle Resume Logic
+          EXP_NAME="${{ needs.setup.outputs.experiment_name }}"
+          RESUME="${{ needs.setup.outputs.resume }}"
+          
+          if [ "$RESUME" = "true" ]; then
+            echo "🔄 Resume requested. Searching for previous checkpoint..."
+            PERSISTENT_BASE="/projects/ctb/blokus-runner/trained_models"
+            
+            # Find latest experiment folder matching the name
+            # Format is usually experiment_name_YYYYMMDD_HHMMSS
+            LATEST_EXP=$(find "$PERSISTENT_BASE" -maxdepth 1 -name "${EXP_NAME}_*" -type d | sort -r | head -n 1)
+            
+            if [ -n "$LATEST_EXP" ]; then
+              echo "✅ Found previous experiment: $LATEST_EXP"
+              EXP_FOLDER=$(basename "$LATEST_EXP")
+              
+              # Create experiments directory if needed
+              mkdir -p "models/experiments"
+              
+              # Copy from persistent storage to workspace
+              cp -r "$LATEST_EXP" "models/experiments/"
+              
+              echo "📂 Restored checkpoint to models/experiments/$EXP_FOLDER"
+              ls -lh "models/experiments/$EXP_FOLDER/"
+              
+              # UPDATE EXP_NAME to use the specific folder name so train.py finds it
+              EXP_NAME="$EXP_FOLDER"
+              echo "🎯 targeted experiment set to: $EXP_NAME"
+            else
+              echo "❌ No previous experiment found for $EXP_NAME in $PERSISTENT_BASE"
+              echo "Cannot resume. Aborting."
+              exit 1
+            fi
+          fi
           
           # Create SLURM dispatch script
           cat > dispatch_training.sh <<'EOF'
@@ -333,7 +369,7 @@ jobs:
           ./dispatch_training.sh \
             "$WORKDIR" \
             "scripts/train.py" \
-            "${{ needs.setup.outputs.experiment_name }}" \
+            "$EXP_NAME" \
             "${{ needs.setup.outputs.board_size }}" \
             "${{ needs.setup.outputs.episodes }}" \
             "${{ needs.setup.outputs.eval_frequency }}" \
