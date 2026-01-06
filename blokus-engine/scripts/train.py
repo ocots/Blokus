@@ -439,6 +439,22 @@ def main():
         state = checkpoint_manager.load_metadata()
         config = TrainingConfig.from_dict(state.config)
         
+        # Override total_episodes from CLI if specified (allows extending training)
+        if args.episodes != 100000:  # 100000 is the default value
+            config = TrainingConfig(
+                experiment_name=config.experiment_name,
+                board_size=config.board_size,
+                num_players=config.num_players,
+                total_episodes=args.episodes,  # Override with CLI value
+                learning_rate=config.learning_rate,
+                batch_size=config.batch_size,
+                epsilon_decay_episodes=config.epsilon_decay_episodes,
+                eval_frequency=config.eval_frequency,
+                eval_games=config.eval_games,
+                models_dir=config.models_dir,
+            )
+            print(f"Extending training to {args.episodes} total episodes")
+        
         train(config, checkpoint_manager, resume=True, no_viz=args.no_viz, log_freq=args.log_freq)
     
     elif args.resume_latest:

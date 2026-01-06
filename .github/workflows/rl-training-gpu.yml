@@ -439,8 +439,15 @@ jobs:
           PERSISTENT_DIR="/projects/ctb/blokus-runner/trained_models/$EXP_NAME"
           
           echo "📦 Copying results to persistent storage..."
+          echo "Source: $EXP_DIR"
+          echo "Destination: $PERSISTENT_DIR"
+          
+          # Debug: show source contents
+          ls -lh "$EXP_DIR/" || echo "Source directory not found!"
+          
           mkdir -p "$PERSISTENT_DIR"
-          cp -r "$EXP_DIR"/* "$PERSISTENT_DIR/"
+          # Use rsync for more robust copying
+          rsync -av "$EXP_DIR/" "$PERSISTENT_DIR/" || cp -r "$EXP_DIR/." "$PERSISTENT_DIR/"
           
           echo "✅ Model saved to: $PERSISTENT_DIR"
           echo "persistent_dir=$PERSISTENT_DIR" >> "$GITHUB_OUTPUT"
