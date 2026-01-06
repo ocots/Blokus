@@ -434,6 +434,7 @@ jobs:
       - name: 💾 Save model to persistent storage
         if: steps.collect.outputs.success == 'true'
         run: |
+          cd blokus-engine
           EXP_DIR="${{ steps.collect.outputs.experiment_dir }}"
           EXP_NAME=$(basename "$EXP_DIR")
           PERSISTENT_DIR="/projects/ctb/blokus-runner/trained_models/$EXP_NAME"
@@ -456,6 +457,7 @@ jobs:
       - name: 📦 Prepare artifacts for upload (lightweight, no model.pt)
         if: steps.collect.outputs.success == 'true'
         run: |
+          cd blokus-engine
           mkdir -p ./training-artifacts
           EXP_DIR="${{ steps.collect.outputs.experiment_dir }}"
           
