@@ -204,7 +204,10 @@ def train(
     if resume and state:
         checkpoint = checkpoint_manager.load_checkpoint("latest")
         if checkpoint:
-            agent.load_state_dict(checkpoint)
+            # Extract model_state_dict from checkpoint wrapper
+            # CheckpointManager saves: {"model_state_dict": agent.state_dict(), ...}
+            model_state = checkpoint.get("model_state_dict", checkpoint)
+            agent.load_state_dict(model_state)
             start_episode = state.total_episodes
             best_win_rate = state.best_win_rate
             print(f"Resumed from episode {start_episode}, best win rate: {best_win_rate:.1%}")
