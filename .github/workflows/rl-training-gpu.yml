@@ -377,25 +377,33 @@ jobs:
             echo "success=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: 📦 Prepare artifacts for upload
+      - name: 💾 Save model to persistent storage
+        if: steps.collect.outputs.success == 'true'
+        run: |
+          EXP_DIR="${{ steps.collect.outputs.experiment_dir }}"
+          EXP_NAME=$(basename "$EXP_DIR")
+          PERSISTENT_DIR="/projects/ctb/blokus-runner/trained_models/$EXP_NAME"
+          
+          echo "📦 Copying results to persistent storage..."
+          mkdir -p "$PERSISTENT_DIR"
+          cp -r "$EXP_DIR"/* "$PERSISTENT_DIR/"
+          
+          echo "✅ Model saved to: $PERSISTENT_DIR"
+          echo "persistent_dir=$PERSISTENT_DIR" >> "$GITHUB_OUTPUT"
+          ls -lh "$PERSISTENT_DIR/"
+
+      - name: 📦 Prepare artifacts for upload (lightweight, no model.pt)
         if: steps.collect.outputs.success == 'true'
         run: |
           mkdir -p ./training-artifacts
           EXP_DIR="${{ steps.collect.outputs.experiment_dir }}"
           
-          # Conditionally upload model based on upload_model flag
-          if [ "${{ needs.setup.outputs.upload_model }}" = "true" ]; then
-            cp "$EXP_DIR/model.pt" ./training-artifacts/ || echo "model.pt not found"
-            echo "✅ Including model.pt in upload"
-          else
-            echo "SKIPPED" > ./training-artifacts/model.pt
-            echo "⚠️  Skipping model.pt upload (upload_model=false)"
-          fi
-          
+          # Only copy lightweight files (model.pt stays on Occidata)
           cp "$EXP_DIR/metadata.json" ./training-artifacts/
           cp "$EXP_DIR/metrics.csv" ./training-artifacts/
           cp "$EXP_DIR/training_plot.png" ./training-artifacts/ || echo "plot not found"
-          echo "📦 Prepared artifacts:"
+          
+          echo "📦 Prepared lightweight artifacts (model.pt excluded):"
           ls -lh ./training-artifacts/
 
       - name: 📤 Upload training artifacts
@@ -478,33 +486,43 @@ jobs:
           echo "📂 Restored artifacts to $TARGET_DIR"
           ls -lh "$TARGET_DIR/"
 
-      - name: 💾 Commit and push results
+      - name: 💾 Commit and push results (lightweight files only)
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           
-          # Add experiment results
-          git add "${{ steps.restore.outputs.experiment_dir }}"
+          EXP_DIR="${{ steps.restore.outputs.experiment_dir }}"
+          EXP_NAME=$(basename "$EXP_DIR")
           
-          # Add deployed model and registry if deployment happened
-          if [ -f "blokus-engine/models/deployed/${{ needs.setup.outputs.experiment_name }}.pt" ]; then
-            git add blokus-engine/models/deployed/${{ needs.setup.outputs.experiment_name }}.pt
-            git add blokus-engine/models/registry.json
-            
-            git commit -m "🚀 Deploy model: ${{ needs.setup.outputs.experiment_name }}
+          # Remove model.pt if it was accidentally copied (it should stay on Occidata)
+          rm -f "$EXP_DIR/model.pt" "$EXP_DIR/checkpoint_best.pt" "$EXP_DIR/checkpoint_latest.pt"
           
-          Win rate: ${{ needs.train.outputs.best_win_rate }}
-          Trained on: Occidata GPU (GTX 1080 Ti)
+          # Add only lightweight experiment results
+          git add "$EXP_DIR/metadata.json" "$EXP_DIR/metrics.csv" "$EXP_DIR/training_plot.png" 2>/dev/null || true
           
-          Model deployed to registry and ready to play in browser!" || echo "No changes to commit"
-          else
-            git commit -m "🤖 GPU Training results: ${{ needs.setup.outputs.experiment_name }}
+          git commit -m "🤖 GPU Training results: ${{ needs.setup.outputs.experiment_name }}
           
           Best win rate: ${{ needs.train.outputs.best_win_rate }}
           Trained on: Occidata GPU (GTX 1080 Ti)
           
-          Model did not meet deployment threshold." || echo "No changes to commit"
-          fi
+          📦 Model stored on Occidata (not in Git due to size).
+          To download: scp occidata:/projects/ctb/blokus-runner/trained_models/${EXP_NAME}/model.pt ./" || echo "No changes to commit"
           
           git push || echo "Nothing to push"
+          
+          echo ""
+          echo "════════════════════════════════════════════════════════════"
+          echo "📦 MODEL DOWNLOAD INSTRUCTIONS"
+          echo "════════════════════════════════════════════════════════════"
+          echo ""
+          echo "The model.pt file is stored on Occidata persistent storage."
+          echo "To download it, run:"
+          echo ""
+          echo "  scp occidata:/projects/ctb/blokus-runner/trained_models/${EXP_NAME}/model.pt ./"
+          echo ""
+          echo "Or to copy the entire experiment folder:"
+          echo ""
+          echo "  scp -r occidata:/projects/ctb/blokus-runner/trained_models/${EXP_NAME}/ ./"
+          echo ""
+          echo "════════════════════════════════════════════════════════════"
 

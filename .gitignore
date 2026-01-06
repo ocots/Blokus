@@ -202,5 +202,6 @@ training_queue.json
 
 # --- OS ---
 .DS_Store
-# Ignore heavy RL checkpoints
+# Ignore heavy RL models and checkpoints (stored on Occidata)
 **/checkpoint_*.pt
+**/*.pt
